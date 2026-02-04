@@ -92,7 +92,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="small fw-bold">Şifre Tekrar</label>
-                    <input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifreye onaylayın">
+                    <input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifreyi onaylayın">
                 </div>
                 <button id="btnSignup" class="btn btn-success w-100 fw-bold">Kayıt Ol</button>
             </div>
@@ -108,6 +108,7 @@
         </div>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
+            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL İNDİR</button>
             <button id="btnLogout" class="btn btn-sm btn-light fw-bold">Çıkış</button>
         </div>
     </nav>
@@ -198,6 +199,53 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
+    // EXCEL INDIRME FONKSIYONU
+    document.getElementById('btnExcel').onclick = () => {
+        if(tumIsler.length === 0) return alert("İndirilecek veri bulunamadı!");
+        
+        let html = `
+            <table border="1">
+                <tr style="background-color: #0d6efd; color: white;">
+                    <th>MUSTERI ADI</th>
+                    <th>BOLGE</th>
+                    <th>TELEFON</th>
+                    <th>DURUM</th>
+                    <th>KAYIT TARIHI</th>
+                    <th>KAYIT YAPAN</th>
+                    <th>SEVK TARIHI</th>
+                    <th>SEVK YAPAN</th>
+                    <th>KURULUM TARIHI</th>
+                    <th>KURULUM YAPAN</th>
+                    <th>NOTLAR</th>
+                </tr>`;
+
+        tumIsler.forEach(m => {
+            let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDILDI" : "BEKLIYOR");
+            html += `
+                <tr>
+                    <td>${m.ad}</td>
+                    <td>${m.bolge}</td>
+                    <td>${m.tel || '-'}</td>
+                    <td>${durum}</td>
+                    <td>${m.kayitTarihi}</td>
+                    <td>${m.kayitYapan || ''}</td>
+                    <td>${m.sevkTarihi || ''}</td>
+                    <td>${m.sevkYapan || ''}</td>
+                    <td>${m.kurulumTarihi || ''}</td>
+                    <td>${m.kurulumYapan || ''}</td>
+                    <td>${m.aciklama || ''}</td>
+                </tr>`;
+        });
+        html += "</table>";
+
+        const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `IMES_SPOR_RAPOR_${new Date().toLocaleDateString('tr-TR')}.xls`;
+        a.click();
+    };
+
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
@@ -271,7 +319,6 @@
 
             let editInfoBtn = (isAdmin && !m.sevkDurum) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold me-2" style="font-size:0.65rem;">✏️ MÜŞTERİ GÜNCELLE</button>` : "";
 
-            // Not varsa yanıp sönen class'ı ekle
             const noteClass = (m.aciklama && m.aciklama.trim() !== "") ? "has-note-blink" : "";
 
             const html = `
