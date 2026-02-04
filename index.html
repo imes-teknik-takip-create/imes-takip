@@ -161,41 +161,33 @@
     let tumIsler = [];
     let currentEditingId = null;
 
-    // --- BİLDİRİM VE TOKEN YÖNETİMİ ---
-    async function bildirimIzniAl() {
+    // --- BİLDİRİM FONKSİYONLARI ---
+    async function requestPermission() {
         try {
-            if (!('Notification' in window)) return;
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 const token = await getToken(messaging, { 
                     vapidKey: 'BHfUHkdSpALVbXc1uEHNkkUop7BEdolylk0j3vdWIWpt62SgTd5Sfm5TGIgrfVGERnKXzgzH7ks8iJSH3V8Xd7k' 
                 });
                 if (token && auth.currentUser) {
-                    // Token'ı DB'ye kaydet (Tetikleme için)
-                    set(ref(db, 'fcmTokens/' + auth.currentUser.uid), {
+                    await set(ref(db, 'fcmTokens/' + auth.currentUser.uid), {
                         token: token,
-                        email: auth.currentUser.email,
-                        updatedAt: Date.now()
+                        email: auth.currentUser.email
                     });
                 }
             }
-        } catch (err) {
-            console.error("Bildirim hatası:", err);
-        }
+        } catch (error) { console.error("Bildirim hatası:", error); }
     }
 
     onMessage(messaging, (payload) => {
         alert(`🔔 BİLDİRİM: ${payload.notification.title}\n${payload.notification.body}`);
     });
 
-    // Otomatik Bildirim Tetikleme (DB Üzerinden Dinleme Simülasyonu)
-    function bildirimGonder(baslik, mesaj) {
-        // Bu kısım normalde Backend'de olur. 
-        // Şimdilik sadece konsola basıyoruz, çünkü istemci üzerinden direkt FCM göndermek güvenlik anahtarı (Server Key) gerektirir.
-        console.log(`Bildirim Tetiklendi: ${baslik} - ${mesaj}`);
+    function notifyTrigger(title, body) {
+        console.log("Bildirim Tetiklendi:", title, body);
+        // Gerçek bildirim gönderimi için Cloud Functions gereklidir.
     }
-
-    // ------------------------------
+    // ----------------------------
 
     onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-wrapper').style.display = user ? 'none' : 'block';
@@ -209,7 +201,7 @@
                 document.getElementById('admin-panel').classList.add('hidden');
             }
             verileriYukle();
-            bildirimIzniAl();
+            requestPermission();
         }
     });
 
@@ -234,6 +226,22 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
+    document.getElementById('btnExcel').onclick = () => {
+        if(tumIsler.length === 0) return alert("İndirilecek veri bulunamadı!");
+        let html = `<table border="1"><tr style="background-color: #0d6efd; color: white;"><th>MUSTERI ADI</th><th>BOLGE</th><th>TELEFON</th><th>DURUM</th><th>KAYIT TARIHI</th><th>KAYIT YAPAN</th><th>SEVK TARIHI</th><th>SEVK YAPAN</th><th>KURULUM TARIHI</th><th>KURULUM YAPAN</th><th>NOTLAR</th></tr>`;
+        tumIsler.forEach(m => {
+            let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDILDI" : "BEKLIYOR");
+            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${m.tel || '-'}</td><td>${durum}</td><td>${m.kayitTarihi}</td><td>${m.kayitYapan || ''}</td><td>${m.sevkTarihi || ''}</td><td>${m.sevkYapan || ''}</td><td>${m.kurulumTarihi || ''}</td><td>${m.kurulumYapan || ''}</td><td>${m.aciklama || ''}</td></tr>`;
+        });
+        html += "</table>";
+        const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `IMES_SPOR_RAPOR_${new Date().toLocaleDateString('tr-TR')}.xls`;
+        a.click();
+    };
+
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
@@ -253,7 +261,7 @@
                 kurulumDurum: false,
                 kayitYapan: currentUser
             }).then(() => {
-                bildirimGonder("YENİ KAYIT", `${ad} firması için yeni iş eklendi.`);
+                notifyTrigger("YENİ KAYIT", `${ad.toUpperCase()} için iş açıldı.`);
             });
             document.getElementById('m_adi').value = "";
             document.getElementById('m_bolge').value = "";
@@ -300,11 +308,7 @@
                 } else if (m.sevkDurum) {
                     undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Geri Al</a>`;
                 }
-                adminControls = `
-                    <div class="d-flex align-items-center gap-2">
-                        ${undoBtn}
-                        <span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>
-                    </div>`;
+                adminControls = `<div class="d-flex align-items-center gap-2">${undoBtn}<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span></div>`;
             }
 
             let editInfoBtn = (isAdmin && !m.sevkDurum) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold me-2" style="font-size:0.65rem;">✏️ MÜŞTERİ GÜNCELLE</button>` : "";
@@ -312,13 +316,8 @@
 
             const html = `
                 <div class="card p-3 ${cls}">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div id="display-ad-${m.id}" class="fw-bold fs-6">${m.ad}</div>
-                        ${adminControls}
-                    </div>
-                    <div class="text-muted small">
-                        📍 <span id="display-bolge-${m.id}">${m.bolge}</span> | 📞 <span id="display-tel-${m.id}">${m.tel || '-'}</span>
-                    </div>
+                    <div class="d-flex justify-content-between align-items-start"><div id="display-ad-${m.id}" class="fw-bold fs-6">${m.ad}</div>${adminControls}</div>
+                    <div class="text-muted small">📍 <span id="display-bolge-${m.id}">${m.bolge}</span> | 📞 <span id="display-tel-${m.id}">${m.tel || '-'}</span></div>
                     <div id="edit-fields-${m.id}" class="hidden mt-2 p-2 border rounded bg-white">
                         <input type="text" id="edit-ad-${m.id}" class="form-control form-control-sm mb-1" value="${m.ad}">
                         <input type="text" id="edit-bolge-${m.id}" class="form-control form-control-sm mb-1" value="${m.bolge}">
@@ -352,6 +351,7 @@
         currentEditingId = id;
         document.getElementById('modal-textarea').value = is.aciklama || "";
         document.getElementById('note-modal').classList.remove('hidden');
+        document.getElementById('modal-textarea').focus();
     };
 
     window.closeNoteModal = () => {
@@ -363,10 +363,44 @@
         if(!currentEditingId) return;
         const val = document.getElementById('modal-textarea').value.trim();
         update(ref(db), { [`isler/${currentEditingId}/aciklama`]: val }).then(() => {
-            const is = tumIsler.find(x => x.id === currentEditingId);
-            bildirimGonder("NOT GÜNCELLENDİ", `${is.ad} işine yeni not eklendi.`);
             closeNoteModal();
         });
+    };
+
+    window.editCustomerInfo = (id) => { document.getElementById(`edit-fields-${id}`).classList.toggle('hidden'); };
+
+    window.saveCustomerInfo = (id) => {
+        const newAd = document.getElementById(`edit-ad-${id}`).value.toUpperCase();
+        const newBolge = document.getElementById(`edit-bolge-${id}`).value.toUpperCase();
+        const newTel = document.getElementById(`edit-tel-${id}`).value;
+        if(confirm("Müşteri bilgileri güncellensin mi?")) {
+            update(ref(db), { [`isler/${id}/ad`]: newAd, [`isler/${id}/bolge`]: newBolge, [`isler/${id}/tel`]: newTel }).then(() => {
+                document.getElementById(`edit-fields-${id}`).classList.add('hidden');
+            });
+        }
+    };
+
+    window.deleteRecord = (id) => {
+        if(!isAdmin) return alert("Silme yetkiniz yok!");
+        if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) { remove(ref(db, `isler/${id}`)); }
+    };
+
+    window.undoAction = (id, type) => {
+        if(!isAdmin) return alert("Geri alma yetkiniz yok!");
+        if(confirm("İşlemi geri almak istediğinize emin misiniz?")) {
+            const up = {};
+            if (type === 'kurulum') {
+                up[`isler/${id}/kurulumDurum`] = false;
+                up[`isler/${id}/kurulumTarihi`] = null;
+                up[`isler/${id}/kurulumYapan`] = null;
+            } else if (type === 'sevk') {
+                up[`isler/${id}/sevkDurum`] = false;
+                up[`isler/${id}/sevkTarihi`] = null;
+                up[`isler/${id}/sevkYapan`] = null;
+            }
+            up[`isler/${id}/timestamp`] = Date.now();
+            update(ref(db), up);
+        }
     };
 
     window.updateStatus = (id, type) => {
@@ -380,19 +414,10 @@
             up[`isler/${id}/timestamp`] = Date.now();
             update(ref(db), up).then(() => {
                 const is = tumIsler.find(x => x.id === id);
-                bildirimGonder("DURUM GÜNCELLEME", `${is.ad} işi ${islemAdi.toUpperCase()}.`);
+                notifyTrigger("DURUM GÜNCELLEME", `${is.ad} - ${islemAdi.toUpperCase()}`);
             });
         }
     };
-
-    window.deleteRecord = (id) => {
-        if(!isAdmin) return alert("Silme yetkiniz yok!");
-        if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) {
-            remove(ref(db, `isler/${id}`));
-        }
-    };
-    
-    // Excel ve diğer yardımcı fonksiyonlar aynı kalacak...
 </script>
 </body>
 </html>
