@@ -86,6 +86,7 @@
             <input type="text" id="search_input" class="form-control form-control-sm w-50" placeholder="🔍 Müşteri veya bölge ara...">
         </div>
         <div class="d-flex align-items-center">
+            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL İNDİR</button>
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
             <button id="btnLogout" class="btn btn-sm btn-light fw-bold">Çıkış</button>
         </div>
@@ -136,22 +137,10 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
-    // YETKİ LİSTELERİ
     const ADMIN_EMAIL = "emrah@imesspor.com";
-    
-    const SEVK_EKIBI = [
-        "kamil@imesspor.com", "sedat@imesspor.com", "aykut@imespor.com", 
-        "depo@imesspor.com", "turgay@imesspor.com", "emrah@imesspor.com"
-    ];
-
+    const SEVK_EKIBI = ["kamil@imesspor.com", "sedat@imesspor.com", "aykut@imespor.com", "depo@imesspor.com", "turgay@imesspor.com", "emrah@imesspor.com"];
     const KURULUM_EKIBI = ["aykut@imespor.com", "emrah@imesspor.com"];
-
-    const KAYIT_VE_NOT_EKIBI = [
-        "eren@imesspor.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com",
-        "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com",
-        "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com",
-        "melisa@imesspor.com", "alimran@imesspor.com", "emrah@imesspor.com"
-    ];
+    const KAYIT_VE_NOT_EKIBI = ["eren@imesspor.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com", "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com", "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com", "melisa@imesspor.com", "alimran@imesspor.com", "emrah@imesspor.com"];
 
     let isAdmin = false;
     let canRegister = false;
@@ -162,16 +151,9 @@
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
         if(user) {
             isAdmin = (user.email === ADMIN_EMAIL);
-            // Müşteri Kaydet panelini kimler görebilir?
             canRegister = KAYIT_VE_NOT_EKIBI.includes(user.email);
-            
             document.getElementById('active-user').innerText = (isAdmin ? "⭐ " : "👤 ") + (user.displayName || user.email);
-            
-            if(canRegister || isAdmin) {
-                document.getElementById('admin-panel').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-panel').classList.add('hidden');
-            }
+            if(canRegister || isAdmin) document.getElementById('admin-panel').classList.remove('hidden');
             verileriYukle();
         }
     });
@@ -190,9 +172,7 @@
         const pwConfirm = document.getElementById('auth_pw_confirm').value;
         if(!name || !email || !pw) return alert("Tüm alanları doldurunuz!");
         if(pw !== pwConfirm) return alert("Şifreler eşleşmiyor!");
-        createUserWithEmailAndPassword(auth, email, pw)
-            .then(u => updateProfile(u.user, {displayName: name}))
-            .catch(e => alert("Kayıt Hatası: " + e.message));
+        createUserWithEmailAndPassword(auth, email, pw).then(u => updateProfile(u.user, {displayName: name})).catch(e => alert("Kayıt Hatası!"));
     };
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
@@ -200,45 +180,29 @@
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
-        if(!canRegister && !isAdmin) return alert("Müşteri kaydetme yetkiniz yok!");
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
-        const currentUser = auth.currentUser.displayName || auth.currentUser.email;
         if(ad && bolge) {
             push(ref(db, 'isler/'), { 
-                ad: ad.toUpperCase(), 
-                bolge: bolge.toUpperCase(), 
-                tel: document.getElementById('m_iletisim').value,
-                aciklama: "", 
-                kayitTarihi: getTarih(), 
-                timestamp: Date.now(),
-                sevkDurum: false, 
-                kurulumDurum: false,
-                kayitYapan: currentUser
+                ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
+                aciklama: "", kayitTarihi: getTarih(), timestamp: Date.now(),
+                sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email
             });
-            document.getElementById('m_adi').value = "";
-            document.getElementById('m_bolge').value = "";
-            document.getElementById('m_iletisim').value = "";
+            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = "";
         }
     };
 
     function verileriYukle() {
         onValue(ref(db, 'isler/'), (snap) => {
             const data = snap.val();
-            if(!data) { tumIsler = []; ekranaBas([]); return; }
-            tumIsler = Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp);
+            tumIsler = data ? Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp) : [];
             ekranaBas(tumIsler);
         });
     }
 
     document.getElementById('search_input').oninput = (e) => {
         const ara = e.target.value.toLocaleLowerCase('tr-TR');
-        const filtrelenmis = tumIsler.filter(m => {
-            const ad = (m.ad || "").toLocaleLowerCase('tr-TR');
-            const bolge = (m.bolge || "").toLocaleLowerCase('tr-TR');
-            const aciklama = (m.aciklama || "").toLocaleLowerCase('tr-TR');
-            return ad.includes(ara) || bolge.includes(ara) || aciklama.includes(ara);
-        });
+        const filtrelenmis = tumIsler.filter(m => (m.ad||"").toLocaleLowerCase('tr-TR').includes(ara) || (m.bolge||"").toLocaleLowerCase('tr-TR').includes(ara));
         ekranaBas(filtrelenmis);
     };
 
@@ -246,57 +210,32 @@
         const lists = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
         const counts = { b: 0, s: 0, t: 0 };
         Object.values(lists).forEach(l => l.innerHTML = "");
-
-        const currentEmail = auth.currentUser.email;
+        const email = auth.currentUser.email;
 
         liste.forEach(m => {
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
-            let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
-            if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
-            if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
-
-            let adminControls = "";
-            if(isAdmin) {
-                let undoBtn = "";
-                if (m.kurulumDurum) {
-                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩ Kurulumu Geri Al</a>`;
-                } else if (m.sevkDurum) {
-                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Sevki Geri Al</a>`;
-                }
-                adminControls = `
-                    <div class="d-flex align-items-center gap-2">
-                        ${undoBtn}
-                        <span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>
-                    </div>`;
-            }
-
-            // Buton ve Not Yetkileri
-            const canSevk = SEVK_EKIBI.includes(currentEmail);
-            const canInstall = KURULUM_EKIBI.includes(currentEmail);
-            const canEditNote = (KAYIT_VE_NOT_EKIBI.includes(currentEmail) || SEVK_EKIBI.includes(currentEmail));
+            let detay = `Kayıt: ${m.kayitYapan || '-'}`;
+            if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''}`;
+            if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''}`;
 
             const html = `
                 <div class="card p-3 ${cls}">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="fw-bold fs-6">${m.ad}</div>
-                        ${adminControls}
+                        ${isAdmin ? `<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>` : ''}
                     </div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
                     <div class="bg-light p-2 rounded my-1 border">
                         <div id="text-${m.id}" class="note-display">${m.aciklama || 'Açıklama yok...'}</div>
-                        <textarea id="inp-${m.id}" class="note-input hidden" placeholder="Yeni not ekle..."></textarea>
-                        ${canEditNote ? `<button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT EKLE / DÜZENLE</button>` : ''}
+                        <textarea id="inp-${m.id}" class="note-input hidden"></textarea>
+                        <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT DÜZENLE</button>
                     </div>
-                    <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                     <div class="mt-2 d-flex gap-1">
-                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" 
-                            ${(m.sevkDurum || !canSevk) ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
-                        <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" 
-                            ${(m.kurulumDurum || !canInstall) ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
+                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum || !SEVK_EKIBI.includes(email) ? 'disabled' : ''}>🚚 SEVK</button>
+                        <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum || !KURULUM_EKIBI.includes(email) ? 'disabled' : ''}>🛠 KURULUM</button>
                     </div>
                     <div class="user-badge">${detay}</div>
                 </div>`;
-            
             if(!m.sevkDurum) { lists.bekleyen.innerHTML += html; counts.b++; } 
             else if(!m.kurulumDurum) { lists.sevk.innerHTML += html; counts.s++; } 
             else { lists.tamam.innerHTML += html; counts.t++; }
@@ -306,68 +245,43 @@
         document.getElementById('count-tamam').innerText = counts.t;
     }
 
-    window.deleteRecord = (id) => {
-        if(!isAdmin) return alert("Silme yetkiniz yok!");
-        if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) {
-            remove(ref(db, `isler/${id}`))
-                .then(() => alert("Kayıt başarıyla silindi."))
-                .catch((error) => alert("Hata oluştu: " + error.message));
-        }
+    // EXCEL İNDİRME FONKSİYONU
+    document.getElementById('btnExcel').onclick = async () => {
+        try {
+            const XLSX = await import("https://cdn.sheetjs.com/xlsx-0.20.1/package/xlsx.mjs");
+            if (tumIsler.length === 0) return alert("Veri yok!");
+            const data = tumIsler.map(is => ({
+                "Müşteri": is.ad, "Bölge": is.bolge, "Telefon": is.tel || "-",
+                "Durum": is.kurulumDurum ? "Tamamlandı" : (is.sevkDurum ? "Sevk Edildi" : "Bekliyor"),
+                "Notlar": is.aciklama || "-", "Kayıt Tarihi": is.kayitTarihi, "Kayıt Yapan": is.kayitYapan
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Rapor");
+            XLSX.writeFile(wb, `Imes_Teknik_Rapor_${new Date().toLocaleDateString('tr-TR')}.xlsx`);
+        } catch (e) { alert("Excel Hatası!"); }
     };
 
-    window.undoAction = (id, type) => {
-        if(!isAdmin) return alert("Geri alma yetkiniz yok!");
-        setTimeout(() => {
-            if(confirm("İşlemi geri almak istediğinize emin misiniz?")) {
-                const up = {};
-                if (type === 'kurulum') {
-                    up[`isler/${id}/kurulumDurum`] = false;
-                    up[`isler/${id}/kurulumTarihi`] = null;
-                    up[`isler/${id}/kurulumYapan`] = null;
-                } else if (type === 'sevk') {
-                    up[`isler/${id}/sevkDurum`] = false;
-                    up[`isler/${id}/sevkTarihi`] = null;
-                    up[`isler/${id}/sevkYapan`] = null;
-                }
-                up[`isler/${id}/timestamp`] = Date.now();
-                update(ref(db), up);
-            }
-        }, 100);
-    };
-
+    window.deleteRecord = (id) => { if(confirm("Silinsin mi?")) remove(ref(db, `isler/${id}`)); };
     window.editNote = (id) => {
-        const currentNote = document.getElementById(`text-${id}`).innerText;
         const input = document.getElementById(`inp-${id}`);
         const text = document.getElementById(`text-${id}`);
-        text.classList.add('hidden');
-        input.classList.remove('hidden');
-        input.value = currentNote === "Açıklama yok..." ? "" : currentNote + "\n";
+        text.classList.add('hidden'); input.classList.remove('hidden');
+        input.value = text.innerText === "Açıklama yok..." ? "" : text.innerText;
         input.focus();
-        input.onblur = () => saveNoteAction(id);
+        input.onblur = () => {
+            update(ref(db), { [`isler/${id}/aciklama`]: input.value.trim() });
+            text.classList.remove('hidden'); input.classList.add('hidden');
+        };
     };
-
-    function saveNoteAction(id) {
-        const val = document.getElementById(`inp-${id}`).value;
-        if(val !== undefined) {
-            update(ref(db), { [`isler/${id}/aciklama`]: val.trim() });
-        }
-    }
-
     window.updateStatus = (id, type) => {
-        const islemAdi = type === 'sevk' ? 'Sevk Edildi' : 'Kurulum Tamamlandı';
-        setTimeout(() => {
-            if(confirm(`${islemAdi} olarak işaretlensin mi?`)) {
-                const currentUser = auth.currentUser.displayName || auth.currentUser.email;
-                const up = {}; 
-                up[`isler/${id}/${type}Durum`] = true; 
-                up[`isler/${id}/${type}Tarihi`] = getTarih(); 
-                up[`isler/${id}/${type}Yapan`] = currentUser;
-                up[`isler/${id}/timestamp`] = Date.now();
-                update(ref(db), up);
-            }
-        }, 100);
+        if(confirm("İşlem tamamlansın mı?")) {
+            const up = {}; up[`isler/${id}/${type}Durum`] = true; up[`isler/${id}/${type}Tarihi`] = getTarih();
+            up[`isler/${id}/${type}Yapan`] = auth.currentUser.displayName || auth.currentUser.email;
+            up[`isler/${id}/timestamp`] = Date.now();
+            update(ref(db), up);
+        }
     };
 </script>
 </body>
 </html>
-
