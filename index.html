@@ -7,13 +7,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f0f2f5; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column; margin: 0; }
-        #auth-container { max-width: 400px; margin: 60px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        #auth-wrapper { max-width: 900px; margin: 40px auto; padding: 20px; }
+        .auth-card { background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 30px; height: 100%; }
+        .auth-divider { border-left: 1px solid #dee2e6; height: 100%; }
         #app-content { display: none; width: 100%; }
         .main-container { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 15px; -webkit-overflow-scrolling: touch; width: 100%; }
         .column { flex: 1; min-width: 320px; display: flex; flex-direction: column; background: #ebedef; border-radius: 12px; padding: 10px; height: calc(100vh - 180px); }
         .column-header { font-weight: 800; font-size: 0.85rem; padding: 10px; border-radius: 8px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 10px; }
         .scroll-area { flex: 1; overflow-y: auto; }
-        .card { border-radius: 10px; border: none; margin-bottom: 12px; border-top: 5px solid #dee2e6; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .card { border-radius: 10px; border: none; margin-bottom: 12px; border-top: 5px solid #dee2e6; box-shadow: 0 2px 6px rgba(0,0,0,0.05); position: relative; }
         .card-bekleyen { background-color: #fffdec; border-top-color: #ffc107; }
         .card-sevk { background-color: #f0faff; border-top-color: #0dcaf0; }
         .card-tamam { background-color: #f6fff9; border-top-color: #198754; }
@@ -21,49 +23,59 @@
         .header-sevk { background: #cff4fc; color: #055160; border-bottom: 3px solid #0dcaf0; }
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
-        .hidden { display: none; }
-        
-        /* Not Alanı Sabitleme (3 Satır) */
-        .note-display { 
-            font-size: 0.75rem; 
-            height: 4.5em; /* Yaklaşık 3 satır yüksekliği */
-            line-height: 1.5em;
-            overflow-y: auto; 
-            white-space: pre-wrap; 
-            background: #fff;
-            padding: 4px;
-            border-radius: 4px;
-        }
-        .note-input { 
-            font-size: 0.75rem; 
-            border: 1px solid #0d6efd; 
-            border-radius: 4px; 
-            padding: 5px; 
-            width: 100%; 
-            height: 4.5em; 
-            margin-top: 5px; 
-        }
-
+        .hidden { display: none !important; }
+        .note-display { font-size: 0.75rem; height: 4.5em; line-height: 1.5em; overflow-y: auto; white-space: pre-wrap; background: #fff; padding: 4px; border-radius: 4px; }
+        .note-input { font-size: 0.75rem; border: 1px solid #0d6efd; border-radius: 4px; padding: 5px; width: 100%; height: 4.5em; margin-top: 5px; }
         .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
+        .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; transition: 0.2s; }
+        .btn-delete:hover { background: #dc3545; color: white; }
+        @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
 <body>
 
-<div id="auth-container">
-    <div id="login-form">
-        <h4 class="text-center fw-bold mb-4">PERSONEL GİRİŞİ</h4>
-        <input type="email" id="login_email" class="form-control mb-2" placeholder="E-posta">
-        <input type="password" id="login_pw" class="form-control mb-3" placeholder="Şifre">
-        <button id="btnLogin" class="btn btn-primary w-100 mb-2">Giriş Yap</button>
-        <p class="text-center small">Hesabın yok mu? <a href="#" id="showSignup">Yeni Kayıt</a></p>
-    </div>
-    <div id="signup-form" class="hidden">
-        <h4 class="text-center fw-bold mb-4">YENİ PERSONEL KAYDI</h4>
-        <input type="text" id="auth_name" class="form-control mb-2" placeholder="Ad Soyad">
-        <input type="email" id="auth_email" class="form-control mb-2" placeholder="E-posta">
-        <input type="password" id="auth_pw" class="form-control mb-3" placeholder="Şifre">
-        <button id="btnSignup" class="btn btn-success w-100 mb-2">Kaydı Tamamla</button>
-        <p class="text-center small"><a href="#" id="showLogin">Giriş Ekranına Dön</a></p>
+<div id="auth-wrapper">
+    <div class="row g-4 align-items-stretch">
+        <div class="col-md-5">
+            <div class="auth-card">
+                <h4 class="text-center fw-bold mb-4">GİRİŞ YAP</h4>
+                <div class="mb-2">
+                    <label class="small fw-bold">E-posta</label>
+                    <input type="email" id="login_email" class="form-control" placeholder="E-postanızı girin">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Şifre</label>
+                    <input type="password" id="login_pw" class="form-control" placeholder="Şifrenizi girin">
+                </div>
+                <button id="btnLogin" class="btn btn-primary w-100 fw-bold">Sisteme Giriş</button>
+            </div>
+        </div>
+        <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="auth-divider d-none d-md-block"></div>
+            <span class="bg-f0f2f5 px-2 text-muted small d-md-none">VEYA</span>
+        </div>
+        <div class="col-md-5" id="signup-section">
+            <div class="auth-card">
+                <h4 class="text-center fw-bold mb-4 text-success">YENİ PERSONEL</h4>
+                <div class="mb-2">
+                    <label class="small fw-bold">Ad Soyad</label>
+                    <input type="text" id="auth_name" class="form-control" placeholder="Adınız ve Soyadınız">
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">E-posta</label>
+                    <input type="email" id="auth_email" class="form-control" placeholder="E-posta adresi">
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Şifre</label>
+                    <input type="password" id="auth_pw" class="form-control" placeholder="Şifre oluşturun">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Şifre Tekrar</label>
+                    <input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifreyi onaylayın">
+                </div>
+                <button id="btnSignup" class="btn btn-success w-100 fw-bold">Kayıt Ol</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -79,7 +91,7 @@
         </div>
     </nav>
 
-    <div class="p-3 bg-white shadow-sm border-bottom">
+    <div id="admin-panel" class="p-3 bg-white shadow-sm border-bottom hidden">
         <div class="row g-2 px-2">
             <div class="col-md-4"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri Ad Soyad"></div>
             <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Bölge / Şehir"></div>
@@ -106,7 +118,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -124,13 +136,22 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
+    const ADMIN_EMAIL = "emrah@imesspor.com";
+    let isAdmin = false;
     let tumIsler = [];
 
     onAuthStateChanged(auth, (user) => {
-        document.getElementById('auth-container').style.display = user ? 'none' : 'block';
+        document.getElementById('auth-wrapper').style.display = user ? 'none' : 'block';
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
         if(user) {
-            document.getElementById('active-user').innerText = "👤 " + (user.displayName || user.email);
+            isAdmin = (user.email === ADMIN_EMAIL);
+            document.getElementById('active-user').innerText = (isAdmin ? "⭐ " : "👤 ") + (user.displayName || user.email);
+            
+            if(isAdmin) {
+                document.getElementById('admin-panel').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
             verileriYukle();
         }
     });
@@ -138,17 +159,20 @@
     document.getElementById('btnLogin').onclick = () => {
         const email = document.getElementById('login_email').value;
         const pw = document.getElementById('login_pw').value;
-        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Hata: " + e.message));
+        if(!email || !pw) return alert("E-posta ve şifre gereklidir!");
+        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Giriş Hatası!"));
     };
 
     document.getElementById('btnSignup').onclick = () => {
         const name = document.getElementById('auth_name').value;
         const email = document.getElementById('auth_email').value;
         const pw = document.getElementById('auth_pw').value;
-        if(!name) return alert("İsim giriniz!");
+        const pwConfirm = document.getElementById('auth_pw_confirm').value;
+        if(!name || !email || !pw) return alert("Tüm alanları doldurunuz!");
+        if(pw !== pwConfirm) return alert("Şifreler eşleşmiyor!");
         createUserWithEmailAndPassword(auth, email, pw)
             .then(u => updateProfile(u.user, {displayName: name}))
-            .catch(e => alert("Hata: " + e.message));
+            .catch(e => alert("Kayıt Hatası: " + e.message));
     };
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
@@ -156,6 +180,7 @@
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
+        if(!isAdmin) return alert("Yetkiniz yok!");
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
         const currentUser = auth.currentUser.displayName || auth.currentUser.email;
@@ -208,18 +233,27 @@
             if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
             if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
 
-            let undoBtn = "";
-            if (m.kurulumDurum) {
-                undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩ Kurulumu Geri Al</a>`;
-            } else if (m.sevkDurum) {
-                undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Sevki Geri Al</a>`;
+            // SADECE ADMIN GERİ ALABİLİR VE SİLEBİLİR
+            let adminControls = "";
+            if(isAdmin) {
+                let undoBtn = "";
+                if (m.kurulumDurum) {
+                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩ Kurulumu Geri Al</a>`;
+                } else if (m.sevkDurum) {
+                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Sevki Geri Al</a>`;
+                }
+                adminControls = `
+                    <div class="d-flex align-items-center gap-2">
+                        ${undoBtn}
+                        <span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>
+                    </div>`;
             }
 
             const html = `
                 <div class="card p-3 ${cls}">
                     <div class="d-flex justify-content-between align-items-start">
                         <div class="fw-bold fs-6">${m.ad}</div>
-                        ${undoBtn}
+                        ${adminControls}
                     </div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
                     <div class="bg-light p-2 rounded my-1 border">
@@ -244,9 +278,20 @@
         document.getElementById('count-tamam').innerText = counts.t;
     }
 
+    // SİLME FONKSİYONU
+    window.deleteRecord = (id) => {
+        if(!isAdmin) return alert("Silme yetkiniz yok!");
+        if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) {
+            remove(ref(db, `isler/${id}`))
+                .then(() => alert("Kayıt başarıyla silindi."))
+                .catch((error) => alert("Hata oluştu: " + error.message));
+        }
+    };
+
     window.undoAction = (id, type) => {
+        if(!isAdmin) return alert("Geri alma yetkiniz yok!");
         setTimeout(() => {
-            if(confirm("Bu işlemi geri almak istediğinize emin misiniz?")) {
+            if(confirm("İşlemi geri almak istediğinize emin misiniz?")) {
                 const up = {};
                 if (type === 'kurulum') {
                     up[`isler/${id}/kurulumDurum`] = false;
@@ -272,22 +317,19 @@
         input.value = currentNote === "Açıklama yok..." ? "" : currentNote + "\n";
         input.focus();
         input.onblur = () => saveNoteAction(id);
-        input.onkeydown = (e) => { if(e.key === 'Enter' && e.shiftKey) saveNoteAction(id); };
     };
 
     function saveNoteAction(id) {
         const val = document.getElementById(`inp-${id}`).value;
         if(val !== undefined) {
-            const up = {};
-            up[`isler/${id}/aciklama`] = val.trim();
-            update(ref(db), up);
+            update(ref(db), { [`isler/${id}/aciklama`]: val.trim() });
         }
     }
 
     window.updateStatus = (id, type) => {
         const islemAdi = type === 'sevk' ? 'Sevk Edildi' : 'Kurulum Tamamlandı';
         setTimeout(() => {
-            if(confirm(`Bu işi "${islemAdi}" olarak işaretlemek istediğinize emin misiniz?`)) {
+            if(confirm(`${islemAdi} olarak işaretlensin mi?`)) {
                 const currentUser = auth.currentUser.displayName || auth.currentUser.email;
                 const up = {}; 
                 up[`isler/${id}/${type}Durum`] = true; 
@@ -301,3 +343,4 @@
 </script>
 </body>
 </html>
+
