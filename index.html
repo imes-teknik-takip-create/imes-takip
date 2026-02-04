@@ -138,6 +138,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB1B6mz6OBS_1LeLPzuxg7uoCdiOQfBt2g",
@@ -153,11 +154,34 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
+    const messaging = getMessaging(app);
 
     const ADMIN_EMAIL = "emrah@imesspor.com";
     let isAdmin = false;
     let tumIsler = [];
     let currentEditingId = null;
+
+    // --- BİLDİRİM FONKSİYONLARI ---
+    async function bildirimIzniAl() {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const token = await getToken(messaging, { 
+                    vapidKey: 'BHfUHkdSpALVbXc1uEHNkkUop7BEdolylk0j3vdWIWpt62SgTd5Sfm5TGIgrfVGERnKXzgzH7ks8iJSH3V8Xd7k' 
+                });
+                if (token) {
+                    console.log("Cihaz Bildirim Tokenı:", token);
+                }
+            }
+        } catch (err) {
+            console.log("Bildirim izni alınamadı:", err);
+        }
+    }
+
+    onMessage(messaging, (payload) => {
+        alert(`🔔 YENİ BİLDİRİM:\n${payload.notification.title}\n${payload.notification.body}`);
+    });
+    // ------------------------------
 
     onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-wrapper').style.display = user ? 'none' : 'block';
@@ -171,6 +195,7 @@
                 document.getElementById('admin-panel').classList.add('hidden');
             }
             verileriYukle();
+            bildirimIzniAl(); // Giriş yapıldığında izin iste
         }
     });
 
