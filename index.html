@@ -22,7 +22,8 @@
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
         .hidden { display: none; }
-        .note-input { font-size: 0.75rem; border: 1px solid #ddd; border-radius: 4px; padding: 2px 5px; width: 100%; margin-top: 5px; }
+        .note-input { font-size: 0.75rem; border: 1px solid #0d6efd; border-radius: 4px; padding: 5px; width: 100%; margin-top: 5px; min-height: 60px; }
+        .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -48,6 +49,9 @@
 <div id="app-content">
     <nav class="navbar navbar-dark bg-primary shadow-sm px-3 w-100">
         <span class="navbar-brand fw-bold">İMES SPOR TEKNİK TAKİP</span>
+        <div class="flex-grow-1 mx-4">
+            <input type="text" id="search_input" class="form-control form-control-sm w-50" placeholder="🔍 Müşteri veya bölge ara...">
+        </div>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
             <button id="btnLogout" class="btn btn-sm btn-light fw-bold">Çıkış</button>
@@ -98,6 +102,8 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
+
+    let tumIsler = [];
 
     document.getElementById('showSignup').onclick = () => {
         document.getElementById('login-form').classList.add('hidden');
@@ -162,59 +168,116 @@
     function verileriYukle() {
         onValue(ref(db, 'isler/'), (snap) => {
             const data = snap.val();
-            const lists = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
-            const counts = { b: 0, s: 0, t: 0 };
-            Object.values(lists).forEach(l => l.innerHTML = "");
-            if(!data) return;
-            Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp).forEach(m => {
-                let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
-                let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
-                if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
-                if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
-
-                const html = `
-                    <div class="card p-3 ${cls}">
-                        <div class="fw-bold fs-6">${m.ad}</div>
-                        <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
-                        <div class="bg-light p-2 rounded my-1 small border">
-                            <span id="text-${m.id}">${m.aciklama || 'Açıklama ekle...'}</span>
-                            <input type="text" id="inp-${m.id}" class="note-input hidden" placeholder="Notu yaz ve enterla..." onkeydown="saveNote(event, '${m.id}')">
-                            <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary" style="font-size:0.7rem;">[Düzenle]</button>
-                        </div>
-                        <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
-                        <div class="mt-2 d-flex gap-1">
-                            <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50">${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
-                            <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50">${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
-                        </div>
-                        <div class="user-badge">${detay}</div>
-                    </div>`;
-                
-                if(!m.sevkDurum) { lists.bekleyen.innerHTML += html; counts.b++; } 
-                else if(!m.kurulumDurum) { lists.sevk.innerHTML += html; counts.s++; } 
-                else { lists.tamam.innerHTML += html; counts.t++; }
-            });
-            document.getElementById('count-bekleyen').innerText = counts.b;
-            document.getElementById('count-sevk').innerText = counts.s;
-            document.getElementById('count-tamam').innerText = counts.t;
+            if(!data) {
+                tumIsler = [];
+                ekranaBas([]);
+                return;
+            }
+            tumIsler = Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp);
+            ekranaBas(tumIsler);
         });
     }
 
-    window.editNote = (id) => {
-        document.getElementById(`text-${id}`).classList.add('hidden');
-        document.getElementById(`inp-${id}`).classList.remove('hidden');
-        document.getElementById(`inp-${id}`).focus();
+    document.getElementById('search_input').oninput = (e) => {
+        const ara = e.target.value.toLocaleLowerCase('tr-TR');
+        const filtrelenmis = tumIsler.filter(m => {
+            const ad = (m.ad || "").toLocaleLowerCase('tr-TR');
+            const bolge = (m.bolge || "").toLocaleLowerCase('tr-TR');
+            const aciklama = (m.aciklama || "").toLocaleLowerCase('tr-TR');
+            return ad.includes(ara) || bolge.includes(ara) || aciklama.includes(ara);
+        });
+        ekranaBas(filtrelenmis);
     };
 
-    window.saveNote = (event, id) => {
-        if (event.key === 'Enter') {
-            const val = document.getElementById(`inp-${id}`).value;
+    function ekranaBas(liste) {
+        const lists = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
+        const counts = { b: 0, s: 0, t: 0 };
+        Object.values(lists).forEach(l => l.innerHTML = "");
+
+        liste.forEach(m => {
+            let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
+            let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
+            if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
+            if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
+
+            let undoBtn = "";
+            if (m.kurulumDurum) {
+                undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩ Kurulumu Geri Al</a>`;
+            } else if (m.sevkDurum) {
+                undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Sevki Geri Al</a>`;
+            }
+
+            const html = `
+                <div class="card p-3 ${cls}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="fw-bold fs-6">${m.ad}</div>
+                        ${undoBtn}
+                    </div>
+                    <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
+                    <div class="bg-light p-2 rounded my-1 small border">
+                        <div id="text-${m.id}" style="white-space: pre-wrap; max-height: 100px; overflow-y: auto;">${m.aciklama || 'Açıklama yok...'}</div>
+                        <textarea id="inp-${m.id}" class="note-input hidden" placeholder="Yeni not ekle..."></textarea>
+                        <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT EKLE / DÜZENLE</button>
+                    </div>
+                    <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
+                    <div class="mt-2 d-flex gap-1">
+                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
+                        <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
+                    </div>
+                    <div class="user-badge">${detay}</div>
+                </div>`;
+            
+            if(!m.sevkDurum) { lists.bekleyen.innerHTML += html; counts.b++; } 
+            else if(!m.kurulumDurum) { lists.sevk.innerHTML += html; counts.s++; } 
+            else { lists.tamam.innerHTML += html; counts.t++; }
+        });
+        document.getElementById('count-bekleyen').innerText = counts.b;
+        document.getElementById('count-sevk').innerText = counts.s;
+        document.getElementById('count-tamam').innerText = counts.t;
+    }
+
+    window.undoAction = (id, type) => {
+        if(!confirm("İşlemi geri almak istediğinize emin misiniz?")) return;
+        const up = {};
+        if (type === 'kurulum') {
+            up[`isler/${id}/kurulumDurum`] = false;
+            up[`isler/${id}/kurulumTarihi`] = null;
+            up[`isler/${id}/kurulumYapan`] = null;
+        } else if (type === 'sevk') {
+            up[`isler/${id}/sevkDurum`] = false;
+            up[`isler/${id}/sevkTarihi`] = null;
+            up[`isler/${id}/sevkYapan`] = null;
+        }
+        up[`isler/${id}/timestamp`] = Date.now();
+        update(ref(db), up);
+    };
+
+    window.editNote = (id) => {
+        const currentNote = document.getElementById(`text-${id}`).innerText;
+        const input = document.getElementById(`inp-${id}`);
+        const text = document.getElementById(`text-${id}`);
+        text.classList.add('hidden');
+        input.classList.remove('hidden');
+        input.value = currentNote === "Açıklama yok..." ? "" : currentNote + "\n";
+        input.focus();
+        input.onblur = () => saveNoteAction(id);
+        input.onkeydown = (e) => { if(e.key === 'Enter' && e.shiftKey) saveNoteAction(id); };
+    };
+
+    function saveNoteAction(id) {
+        const val = document.getElementById(`inp-${id}`).value;
+        if(val !== undefined) {
             const up = {};
-            up[`isler/${id}/aciklama`] = val;
+            up[`isler/${id}/aciklama`] = val.trim();
             update(ref(db), up);
         }
-    };
+    }
 
     window.updateStatus = (id, type) => {
+        // Yeni Onay Mekanizması
+        const islemAdi = type === 'sevk' ? 'Sevk Edildi' : 'Kurulum Tamamlandı';
+        if(!confirm(`Bu işi "${islemAdi}" olarak işaretlemek istediğinize emin misiniz?`)) return;
+
         const currentUser = auth.currentUser.displayName || auth.currentUser.email;
         const up = {}; 
         up[`isler/${id}/${type}Durum`] = true; 
