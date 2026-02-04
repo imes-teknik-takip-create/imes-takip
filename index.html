@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İMES SPOR - Teknik Takip</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f0f2f5; font-family: sans-serif; padding-bottom: 50px; }
+        .container { max-width: 900px; padding-top: 20px; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        
+        /* Başlıklar ve Daraltma */
+        .section-title { font-size: 0.9rem; font-weight: 800; color: #495057; padding: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 8px; margin-top: 20px; border-left: 4px solid #0d6efd; }
+        .section-title:hover { background: #f8f9fa; }
+        
+        /* Kaydet Butonu Ayarı */
+        .btn-kaydet { height: 38px; font-size: 0.8rem; font-weight: bold; padding: 0 20px; }
+        
+        .customer-item { border-left: 5px solid #dee2e6; }
+        .customer-name { font-weight: 700; color: #212529; font-size: 0.95rem; }
+        .btn-action { border-radius: 8px; font-weight: bold; font-size: 0.75rem; padding: 5px; }
+        .btn-done { background-color: #e9ecef !important; color: #adb5bd !important; border: none; pointer-events: none; }
+        
+        /* Not Alanı */
+        .note-input { font-size: 0.8rem; border-radius: 6px; border: 1px dashed #ced4da; margin-top: 10px; }
+        
+        /* Renkler */
+        .bg-bekleyen { border-left-color: #ffc107; }
+        .bg-sevk { border-left-color: #0dcaf0; }
+        .bg-kurulum { border-left-color: #198754; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary shadow mb-4">
+    <div class="container-fluid justify-content-center">
+        <span class="navbar-brand mb-0 h1 fw-bold">İMES SPOR TEKNİK TAKİP</span>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card p-3">
+        <div class="row g-2 align-items-center">
+            <div class="col-8 col-md-5"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri Adı Soyadı"></div>
+            <div class="col-8 col-md-4"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Bölge / Şehir"></div>
+            <div class="col-4 col-md-3 text-end"><button id="btnKaydet" class="btn btn-dark btn-kaydet w-100">KAYDET</button></div>
+        </div>
+    </div>
+
+    <div class="section-title" onclick="toggleSection('liste-bekleyen')">📋 SEVK BEKLEYENLER <span>▼</span></div>
+    <div id="liste-bekleyen"></div>
+
+    <div class="section-title text-info" style="border-left-color: #0dcaf0;" onclick="toggleSection('liste-sevk')">🚚 SEVK EDİLDİ / KURULUM BEKLEYENLER <span>▼</span></div>
+    <div id="liste-sevk"></div>
+
+    <div class="section-title text-success" style="border-left-color: #198754;" onclick="toggleSection('liste-tamam')">✅ TAMAMLANANLAR <span>▼</span></div>
+    <div id="liste-tamam"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB1B6mz6OBS_1LeLpzug7uoCdiOQFbt2g",
+        authDomain: "imes-teknik-takip.firebaseapp.com",
+        databaseURL: "https://imes-teknik-takip-default-rtdb.firebaseio.com",
+        projectId: "imes-teknik-takip",
+        storageBucket: "imes-teknik-takip.firebasestorage.app",
+        messagingSenderId: "51185146925",
+        appId: "1:51185146925:web:ad2184d20c1f83d1ff6ca4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Kaydetme
+    document.getElementById('btnKaydet').onclick = function() {
+        const ad = document.getElementById('m_adi').value;
+        const bolge = document.getElementById('m_bolge').value;
+        if(ad && bolge) {
+            push(ref(db, 'isler/'), { ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), sevkDurum: false, kurulumDurum: false, not: "" });
+            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = "";
+        }
+    };
+
+    // Dinleme
+    onValue(ref(db, 'isler/'), (snapshot) => {
+        const data = snapshot.val();
+        const d = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
+        d.bekleyen.innerHTML = d.sevk.innerHTML = d.tamam.innerHTML = "";
+
+        for (let id in data) {
+            const m = data[id];
+            const itemHtml = `
+                <div class="card p-3 customer-item ${!m.sevkDurum ? 'bg-bekleyen' : (m.kurulumDurum ? 'bg-kurulum' : 'bg-sevk')}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><div class="customer-name">${m.ad}</div><small class="text-muted fw-bold">${m.bolge}</small></div>
+                        <div class="row g-2" style="min-width: 200px;">
+                            <div class="col-6"><button onclick="islemGuncelle('${id}', 'sevk')" class="btn ${m.sevkDurum ? 'btn-done' : 'btn-outline-primary'} btn-action w-100">${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button></div>
+                            <div class="col-6"><button onclick="islemGuncelle('${id}', 'kurulum')" class="btn ${m.kurulumDurum ? 'btn-done' : 'btn-outline-success'} btn-action w-100">${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button></div>
+                        </div>
+                    </div>
+                    <textarea class="form-control note-input" placeholder="Müşteri notu..." onchange="notGuncelle('${id}', this.value)">${m.not || ''}</textarea>
+                </div>`;
+
+            if (!m.sevkDurum) d.bekleyen.innerHTML += itemHtml;
+            else if (!m.kurulumDurum) d.sevk.innerHTML += itemHtml;
+            else d.tamam.innerHTML += itemHtml;
+        }
+    });
+
+    // Fonksiyonlar
+    window.islemGuncelle = (id, tip) => {
+        const up = {}; up[`isler/${id}/${tip}Durum`] = true;
+        update(ref(db), up);
+    };
+
+    window.notGuncelle = (id, val) => {
+        update(ref(db, `isler/${id}`), { not: val });
+    };
+
+    window.toggleSection = (id) => {
+        const x = document.getElementById(id);
+        x.style.display = x.style.display === "none" ? "block" : "none";
+    };
+</script>
+</body>
+</html>
