@@ -136,8 +136,25 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
+    // YETKİ LİSTELERİ
     const ADMIN_EMAIL = "emrah@imesspor.com";
+    
+    const SEVK_EKIBI = [
+        "kamil@imesspor.com", "sedat@imesspor.com", "aykut@imespor.com", 
+        "depo@imesspor.com", "turgay@imesspor.com", "emrah@imesspor.com"
+    ];
+
+    const KURULUM_EKIBI = ["aykut@imespor.com", "emrah@imesspor.com"];
+
+    const KAYIT_VE_NOT_EKIBI = [
+        "eren@imesspor.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com",
+        "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com",
+        "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com",
+        "melisa@imesspor.com", "alimran@imesspor.com", "emrah@imesspor.com"
+    ];
+
     let isAdmin = false;
+    let canRegister = false;
     let tumIsler = [];
 
     onAuthStateChanged(auth, (user) => {
@@ -145,9 +162,12 @@
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
         if(user) {
             isAdmin = (user.email === ADMIN_EMAIL);
+            // Müşteri Kaydet panelini kimler görebilir?
+            canRegister = KAYIT_VE_NOT_EKIBI.includes(user.email);
+            
             document.getElementById('active-user').innerText = (isAdmin ? "⭐ " : "👤 ") + (user.displayName || user.email);
             
-            if(isAdmin) {
+            if(canRegister || isAdmin) {
                 document.getElementById('admin-panel').classList.remove('hidden');
             } else {
                 document.getElementById('admin-panel').classList.add('hidden');
@@ -180,7 +200,7 @@
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
-        if(!isAdmin) return alert("Yetkiniz yok!");
+        if(!canRegister && !isAdmin) return alert("Müşteri kaydetme yetkiniz yok!");
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
         const currentUser = auth.currentUser.displayName || auth.currentUser.email;
@@ -227,13 +247,14 @@
         const counts = { b: 0, s: 0, t: 0 };
         Object.values(lists).forEach(l => l.innerHTML = "");
 
+        const currentEmail = auth.currentUser.email;
+
         liste.forEach(m => {
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
             let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
             if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
             if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
 
-            // SADECE ADMIN GERİ ALABİLİR VE SİLEBİLİR
             let adminControls = "";
             if(isAdmin) {
                 let undoBtn = "";
@@ -249,6 +270,11 @@
                     </div>`;
             }
 
+            // Buton ve Not Yetkileri
+            const canSevk = SEVK_EKIBI.includes(currentEmail);
+            const canInstall = KURULUM_EKIBI.includes(currentEmail);
+            const canEditNote = (KAYIT_VE_NOT_EKIBI.includes(currentEmail) || SEVK_EKIBI.includes(currentEmail));
+
             const html = `
                 <div class="card p-3 ${cls}">
                     <div class="d-flex justify-content-between align-items-start">
@@ -259,12 +285,14 @@
                     <div class="bg-light p-2 rounded my-1 border">
                         <div id="text-${m.id}" class="note-display">${m.aciklama || 'Açıklama yok...'}</div>
                         <textarea id="inp-${m.id}" class="note-input hidden" placeholder="Yeni not ekle..."></textarea>
-                        <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT EKLE / DÜZENLE</button>
+                        ${canEditNote ? `<button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT EKLE / DÜZENLE</button>` : ''}
                     </div>
                     <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                     <div class="mt-2 d-flex gap-1">
-                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
-                        <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
+                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" 
+                            ${(m.sevkDurum || !canSevk) ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
+                        <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" 
+                            ${(m.kurulumDurum || !canInstall) ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
                     </div>
                     <div class="user-badge">${detay}</div>
                 </div>`;
@@ -278,7 +306,6 @@
         document.getElementById('count-tamam').innerText = counts.t;
     }
 
-    // SİLME FONKSİYONU
     window.deleteRecord = (id) => {
         if(!isAdmin) return alert("Silme yetkiniz yok!");
         if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")) {
@@ -343,4 +370,3 @@
 </script>
 </body>
 </html>
-
