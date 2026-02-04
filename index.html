@@ -24,21 +24,17 @@
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
         .hidden { display: none !important; }
-        /* MODAL TASARIMI */
         .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
         .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; transition: 0.2s; }
         .btn-delete:hover { background: #dc3545; color: white; }
-
-        /* YANIP SÖNME EFEKTİ */
         @keyframes blink-red {
             0% { color: #0d6efd; transform: scale(1); }
             50% { color: #dc3545; transform: scale(1.05); font-weight: 900; }
             100% { color: #0d6efd; transform: scale(1); }
         }
         .has-note-blink { animation: blink-red 1.5s infinite; }
-
         @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
@@ -199,7 +195,6 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-    // EXCEL INDIRME FONKSIYONU
     document.getElementById('btnExcel').onclick = () => {
         if(tumIsler.length === 0) return alert("İndirilecek veri bulunamadı!");
         
@@ -342,7 +337,7 @@
                     </div>
                     <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                     <div class="mt-2 d-flex gap-1">
-                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
+                        <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK EDİLDİ' : '🚚 SEVK ET'}</button>
                         <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
                     </div>
                     <div class="user-badge">${detay}</div>
@@ -357,7 +352,6 @@
         document.getElementById('count-tamam').innerText = counts.t;
     }
 
-    // --- MODAL FONKSİYONLARI ---
     window.openNoteModal = (id) => {
         const is = tumIsler.find(x => x.id === id);
         if(!is) return;
@@ -439,5 +433,3 @@
 </script>
 </body>
 </html>
-
-
