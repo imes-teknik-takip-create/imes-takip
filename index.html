@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>İMES SPOR - Güvenli Teknik Takip</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -22,7 +22,28 @@
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
         .hidden { display: none; }
-        .note-input { font-size: 0.75rem; border: 1px solid #0d6efd; border-radius: 4px; padding: 5px; width: 100%; margin-top: 5px; min-height: 60px; }
+        
+        /* Not Alanı Sabitleme (3 Satır) */
+        .note-display { 
+            font-size: 0.75rem; 
+            height: 4.5em; /* Yaklaşık 3 satır yüksekliği */
+            line-height: 1.5em;
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            background: #fff;
+            padding: 4px;
+            border-radius: 4px;
+        }
+        .note-input { 
+            font-size: 0.75rem; 
+            border: 1px solid #0d6efd; 
+            border-radius: 4px; 
+            padding: 5px; 
+            width: 100%; 
+            height: 4.5em; 
+            margin-top: 5px; 
+        }
+
         .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
     </style>
 </head>
@@ -105,15 +126,6 @@
 
     let tumIsler = [];
 
-    document.getElementById('showSignup').onclick = () => {
-        document.getElementById('login-form').classList.add('hidden');
-        document.getElementById('signup-form').classList.remove('hidden');
-    };
-    document.getElementById('showLogin').onclick = () => {
-        document.getElementById('signup-form').classList.add('hidden');
-        document.getElementById('login-form').classList.remove('hidden');
-    };
-
     onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-container').style.display = user ? 'none' : 'block';
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
@@ -168,11 +180,7 @@
     function verileriYukle() {
         onValue(ref(db, 'isler/'), (snap) => {
             const data = snap.val();
-            if(!data) {
-                tumIsler = [];
-                ekranaBas([]);
-                return;
-            }
+            if(!data) { tumIsler = []; ekranaBas([]); return; }
             tumIsler = Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp);
             ekranaBas(tumIsler);
         });
@@ -214,8 +222,8 @@
                         ${undoBtn}
                     </div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
-                    <div class="bg-light p-2 rounded my-1 small border">
-                        <div id="text-${m.id}" style="white-space: pre-wrap; max-height: 100px; overflow-y: auto;">${m.aciklama || 'Açıklama yok...'}</div>
+                    <div class="bg-light p-2 rounded my-1 border">
+                        <div id="text-${m.id}" class="note-display">${m.aciklama || 'Açıklama yok...'}</div>
                         <textarea id="inp-${m.id}" class="note-input hidden" placeholder="Yeni not ekle..."></textarea>
                         <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold" style="font-size:0.75rem;">+ NOT EKLE / DÜZENLE</button>
                     </div>
@@ -237,19 +245,22 @@
     }
 
     window.undoAction = (id, type) => {
-        if(!confirm("İşlemi geri almak istediğinize emin misiniz?")) return;
-        const up = {};
-        if (type === 'kurulum') {
-            up[`isler/${id}/kurulumDurum`] = false;
-            up[`isler/${id}/kurulumTarihi`] = null;
-            up[`isler/${id}/kurulumYapan`] = null;
-        } else if (type === 'sevk') {
-            up[`isler/${id}/sevkDurum`] = false;
-            up[`isler/${id}/sevkTarihi`] = null;
-            up[`isler/${id}/sevkYapan`] = null;
-        }
-        up[`isler/${id}/timestamp`] = Date.now();
-        update(ref(db), up);
+        setTimeout(() => {
+            if(confirm("Bu işlemi geri almak istediğinize emin misiniz?")) {
+                const up = {};
+                if (type === 'kurulum') {
+                    up[`isler/${id}/kurulumDurum`] = false;
+                    up[`isler/${id}/kurulumTarihi`] = null;
+                    up[`isler/${id}/kurulumYapan`] = null;
+                } else if (type === 'sevk') {
+                    up[`isler/${id}/sevkDurum`] = false;
+                    up[`isler/${id}/sevkTarihi`] = null;
+                    up[`isler/${id}/sevkYapan`] = null;
+                }
+                up[`isler/${id}/timestamp`] = Date.now();
+                update(ref(db), up);
+            }
+        }, 100);
     };
 
     window.editNote = (id) => {
@@ -274,17 +285,18 @@
     }
 
     window.updateStatus = (id, type) => {
-        // Yeni Onay Mekanizması
         const islemAdi = type === 'sevk' ? 'Sevk Edildi' : 'Kurulum Tamamlandı';
-        if(!confirm(`Bu işi "${islemAdi}" olarak işaretlemek istediğinize emin misiniz?`)) return;
-
-        const currentUser = auth.currentUser.displayName || auth.currentUser.email;
-        const up = {}; 
-        up[`isler/${id}/${type}Durum`] = true; 
-        up[`isler/${id}/${type}Tarihi`] = getTarih(); 
-        up[`isler/${id}/${type}Yapan`] = currentUser;
-        up[`isler/${id}/timestamp`] = Date.now();
-        update(ref(db), up);
+        setTimeout(() => {
+            if(confirm(`Bu işi "${islemAdi}" olarak işaretlemek istediğinize emin misiniz?`)) {
+                const currentUser = auth.currentUser.displayName || auth.currentUser.email;
+                const up = {}; 
+                up[`isler/${id}/${type}Durum`] = true; 
+                up[`isler/${id}/${type}Tarihi`] = getTarih(); 
+                up[`isler/${id}/${type}Yapan`] = currentUser;
+                up[`isler/${id}/timestamp`] = Date.now();
+                update(ref(db), up);
+            }
+        }, 100);
     };
 </script>
 </body>
