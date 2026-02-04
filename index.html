@@ -6,11 +6,11 @@
     <title>İMES SPOR - Güvenli Teknik Takip</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f0f2f5; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
-        #auth-container { max-width: 400px; margin: 100px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        #app-content { display: none; }
-        .main-container { flex: 1; display: flex; overflow: hidden; padding: 15px; gap: 15px; }
-        .column { flex: 1; display: flex; flex-direction: column; background: #ebedef; border-radius: 12px; padding: 10px; min-width: 300px; }
+        body { background-color: #f0f2f5; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column; margin: 0; }
+        #auth-container { max-width: 400px; margin: 60px auto; padding: 30px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        #app-content { display: none; width: 100%; }
+        .main-container { flex: 1; display: flex; overflow-x: auto; padding: 15px; gap: 15px; -webkit-overflow-scrolling: touch; width: 100%; }
+        .column { flex: 1; min-width: 320px; display: flex; flex-direction: column; background: #ebedef; border-radius: 12px; padding: 10px; height: calc(100vh - 180px); }
         .column-header { font-weight: 800; font-size: 0.85rem; padding: 10px; border-radius: 8px; text-transform: uppercase; display: flex; justify-content: space-between; margin-bottom: 10px; }
         .scroll-area { flex: 1; overflow-y: auto; }
         .card { border-radius: 10px; border: none; margin-bottom: 12px; border-top: 5px solid #dee2e6; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
@@ -21,21 +21,32 @@
         .header-sevk { background: #cff4fc; color: #055160; border-bottom: 3px solid #0dcaf0; }
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
+        .hidden { display: none; }
+        .note-input { font-size: 0.75rem; border: 1px solid #ddd; border-radius: 4px; padding: 2px 5px; width: 100%; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div id="auth-container">
-    <h4 class="text-center fw-bold mb-4">İMES SPOR GİRİŞ</h4>
-    <input type="text" id="auth_name" class="form-control mb-2" placeholder="Ad Soyad (Yeni Kayıt İçin)">
-    <input type="email" id="auth_email" class="form-control mb-2" placeholder="E-posta">
-    <input type="password" id="auth_pw" class="form-control mb-3" placeholder="Şifre">
-    <button id="btnLogin" class="btn btn-primary w-100 mb-2">Giriş Yap</button>
-    <button id="btnSignup" class="btn btn-outline-secondary w-100">Yeni Personel Kaydı</button>
+    <div id="login-form">
+        <h4 class="text-center fw-bold mb-4">PERSONEL GİRİŞİ</h4>
+        <input type="email" id="login_email" class="form-control mb-2" placeholder="E-posta">
+        <input type="password" id="login_pw" class="form-control mb-3" placeholder="Şifre">
+        <button id="btnLogin" class="btn btn-primary w-100 mb-2">Giriş Yap</button>
+        <p class="text-center small">Hesabın yok mu? <a href="#" id="showSignup">Yeni Kayıt</a></p>
+    </div>
+    <div id="signup-form" class="hidden">
+        <h4 class="text-center fw-bold mb-4">YENİ PERSONEL KAYDI</h4>
+        <input type="text" id="auth_name" class="form-control mb-2" placeholder="Ad Soyad">
+        <input type="email" id="auth_email" class="form-control mb-2" placeholder="E-posta">
+        <input type="password" id="auth_pw" class="form-control mb-3" placeholder="Şifre">
+        <button id="btnSignup" class="btn btn-success w-100 mb-2">Kaydı Tamamla</button>
+        <p class="text-center small"><a href="#" id="showLogin">Giriş Ekranına Dön</a></p>
+    </div>
 </div>
 
 <div id="app-content">
-    <nav class="navbar navbar-dark bg-primary shadow-sm px-3">
+    <nav class="navbar navbar-dark bg-primary shadow-sm px-3 w-100">
         <span class="navbar-brand fw-bold">İMES SPOR TEKNİK TAKİP</span>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
@@ -43,12 +54,12 @@
         </div>
     </nav>
 
-    <div class="p-3 bg-white shadow-sm mx-3 mt-3 border-radius-12" style="border-radius:12px;">
-        <div class="row g-2">
-            <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri Ad Soyad"></div>
+    <div class="p-3 bg-white shadow-sm border-bottom">
+        <div class="row g-2 px-2">
+            <div class="col-md-4"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri Ad Soyad"></div>
             <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Bölge / Şehir"></div>
             <div class="col-md-3"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Telefon"></div>
-            <div class="col-md-3"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
+            <div class="col-md-2"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
         </div>
     </div>
 
@@ -70,7 +81,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -88,6 +99,15 @@
     const db = getDatabase(app);
     const auth = getAuth(app);
 
+    document.getElementById('showSignup').onclick = () => {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('signup-form').classList.remove('hidden');
+    };
+    document.getElementById('showLogin').onclick = () => {
+        document.getElementById('signup-form').classList.add('hidden');
+        document.getElementById('login-form').classList.remove('hidden');
+    };
+
     onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-container').style.display = user ? 'none' : 'block';
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
@@ -98,9 +118,9 @@
     });
 
     document.getElementById('btnLogin').onclick = () => {
-        const email = document.getElementById('auth_email').value;
-        const pw = document.getElementById('auth_pw').value;
-        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Giriş Hatası: " + e.message));
+        const email = document.getElementById('login_email').value;
+        const pw = document.getElementById('login_pw').value;
+        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Hata: " + e.message));
     };
 
     document.getElementById('btnSignup').onclick = () => {
@@ -110,7 +130,7 @@
         if(!name) return alert("İsim giriniz!");
         createUserWithEmailAndPassword(auth, email, pw)
             .then(u => updateProfile(u.user, {displayName: name}))
-            .catch(e => alert("Kayıt Hatası: " + e.message));
+            .catch(e => alert("Hata: " + e.message));
     };
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
@@ -123,12 +143,19 @@
         const currentUser = auth.currentUser.displayName || auth.currentUser.email;
         if(ad && bolge) {
             push(ref(db, 'isler/'), { 
-                ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
-                kayitTarihi: getTarih(), timestamp: Date.now(),
-                sevkDurum: false, kurulumDurum: false,
+                ad: ad.toUpperCase(), 
+                bolge: bolge.toUpperCase(), 
+                tel: document.getElementById('m_iletisim').value,
+                aciklama: "", 
+                kayitTarihi: getTarih(), 
+                timestamp: Date.now(),
+                sevkDurum: false, 
+                kurulumDurum: false,
                 kayitYapan: currentUser
             });
-            document.getElementById('m_adi').value = document.getElementById('m_bolge').value = document.getElementById('m_iletisim').value = "";
+            document.getElementById('m_adi').value = "";
+            document.getElementById('m_bolge').value = "";
+            document.getElementById('m_iletisim').value = "";
         }
     };
 
@@ -141,7 +168,6 @@
             if(!data) return;
             Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp).forEach(m => {
                 let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
-                
                 let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
                 if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
                 if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
@@ -150,6 +176,11 @@
                     <div class="card p-3 ${cls}">
                         <div class="fw-bold fs-6">${m.ad}</div>
                         <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
+                        <div class="bg-light p-2 rounded my-1 small border">
+                            <span id="text-${m.id}">${m.aciklama || 'Açıklama ekle...'}</span>
+                            <input type="text" id="inp-${m.id}" class="note-input hidden" placeholder="Notu yaz ve enterla..." onkeydown="saveNote(event, '${m.id}')">
+                            <button onclick="editNote('${m.id}')" class="btn btn-sm p-0 text-primary" style="font-size:0.7rem;">[Düzenle]</button>
+                        </div>
                         <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                         <div class="mt-2 d-flex gap-1">
                             <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50">${m.sevkDurum ? '✅ SEVK' : '🚚 SEVK'}</button>
@@ -167,6 +198,21 @@
             document.getElementById('count-tamam').innerText = counts.t;
         });
     }
+
+    window.editNote = (id) => {
+        document.getElementById(`text-${id}`).classList.add('hidden');
+        document.getElementById(`inp-${id}`).classList.remove('hidden');
+        document.getElementById(`inp-${id}`).focus();
+    };
+
+    window.saveNote = (event, id) => {
+        if (event.key === 'Enter') {
+            const val = document.getElementById(`inp-${id}`).value;
+            const up = {};
+            up[`isler/${id}/aciklama`] = val;
+            update(ref(db), up);
+        }
+    };
 
     window.updateStatus = (id, type) => {
         const currentUser = auth.currentUser.displayName || auth.currentUser.email;
