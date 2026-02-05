@@ -196,14 +196,40 @@
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
     document.getElementById('btnExcel').onclick = () => {
-        let html = `<table border="1"><tr><th>MUSTERI</th><th>ADRES</th><th>DURUM</th><th>HAZIRLIK</th><th>KAYIT</th></tr>`;
+        let html = `<table border="1">
+            <tr style="background:#0d6efd; color:white;">
+                <th>MÜŞTERİ / FİRMA</th>
+                <th>SEVK ADRESİ</th>
+                <th>DURUM</th>
+                <th>HAZIRLIK</th>
+                <th>KAYIT (KİM & NE ZAMAN)</th>
+                <th>SEVK (KİM & NE ZAMAN)</th>
+                <th>KURULUM (KİM & NE ZAMAN)</th>
+                <th>NOTLAR</th>
+            </tr>`;
+            
         tumIsler.forEach(m => {
-            let durum = m.kurulumDurum ? "TAMAM" : (m.sevkDurum ? "SEVK" : "BEKLIYOR");
+            let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDİLDİ" : "BEKLİYOR");
             let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
-            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${durum}</td><td>${hazir}</td><td>${m.kayitTarihi}</td></tr>`;
+            
+            let kayitBilgi = `${m.kayitYapan || '-'} | ${m.kayitTarihi || '-'}`;
+            let sevkBilgi = m.sevkDurum ? `${m.sevkYapan || '-'} | ${m.sevkTarihi || '-'}` : "-";
+            let kurulumBilgi = m.kurulumDurum ? `${m.kurulumYapan || '-'} | ${m.kurulumTarihi || '-'}` : "-";
+
+            html += `<tr>
+                <td>${m.ad}</td>
+                <td>${m.bolge}</td>
+                <td>${durum}</td>
+                <td>${hazir}</td>
+                <td>${kayitBilgi}</td>
+                <td>${sevkBilgi}</td>
+                <td>${kurulumBilgi}</td>
+                <td>${m.aciklama || '-'}</td>
+            </tr>`;
         });
+        
         const blob = new Blob(['\ufeff', html + "</table>"], { type: 'application/vnd.ms-excel' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_RAPOR.xls`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_TEKNIK_DETAYLI_RAPOR.xls`; a.click();
     };
 
     const getTarih = () => new Date().toLocaleString('tr-TR');
@@ -251,7 +277,6 @@
                 adminControls = `<div class="d-flex align-items-center gap-2">${undoBtn}<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span></div>`;
             }
 
-            // İşlem yapanların detaylı dökümü
             let detaySatirlari = [`<div><b>Kayıt:</b> ${m.kayitYapan || '-'} (${m.kayitTarihi})</div>`];
             if(m.sevkDurum) detaySatirlari.push(`<div><b>Sevk:</b> ${m.sevkYapan || '-'} (${m.sevkTarihi})</div>`);
             if(m.kurulumDurum) detaySatirlari.push(`<div><b>Kurulum:</b> ${m.kurulumYapan || '-'} (${m.kurulumTarihi})</div>`);
