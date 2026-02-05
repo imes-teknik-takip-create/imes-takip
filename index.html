@@ -23,18 +23,16 @@
         .header-sevk { background: #cff4fc; color: #055160; border-bottom: 3px solid #0dcaf0; }
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
         .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
+        .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+        .status-badge:hover { opacity: 0.8; transform: scale(1.05); }
+        .badge-ready { background: #198754; color: white; }
+        .badge-wait { background: #6c757d; color: white; }
         .hidden { display: none !important; }
         .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
-        .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; transition: 0.2s; }
-        .btn-delete:hover { background: #dc3545; color: white; }
-        @keyframes blink-red {
-            0% { color: #0d6efd; transform: scale(1); }
-            50% { color: #dc3545; transform: scale(1.05); font-weight: 900; }
-            100% { color: #0d6efd; transform: scale(1); }
-        }
-        .has-note-blink { animation: blink-red 1.5s infinite; }
+        .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; }
+        @keyframes blink-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .has-note-blink { animation: blink-red 1s infinite; color: #dc3545 !important; }
         @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
@@ -43,7 +41,7 @@
 <div id="note-modal" class="custom-modal hidden">
     <div class="modal-box">
         <h6 class="fw-bold mb-3 border-bottom pb-2">📋 İŞ NOTLARI</h6>
-        <textarea id="modal-textarea" class="form-control" rows="6" placeholder="Açıklama veya notunuzu buraya yazın..."></textarea>
+        <textarea id="modal-textarea" class="form-control" rows="6"></textarea>
         <div class="d-flex gap-2 mt-3">
             <button onclick="closeNoteModal()" class="btn btn-sm btn-secondary w-50">Kapat</button>
             <button id="btn-save-note" class="btn btn-sm btn-primary w-50">Notu Kaydet</button>
@@ -58,38 +56,25 @@
                 <h4 class="text-center fw-bold mb-4">GİRİŞ YAP</h4>
                 <div class="mb-2">
                     <label class="small fw-bold">E-posta</label>
-                    <input type="email" id="login_email" class="form-control" placeholder="E-postanızı girin">
+                    <input type="email" id="login_email" class="form-control">
                 </div>
                 <div class="mb-3">
                     <label class="small fw-bold">Şifre</label>
-                    <input type="password" id="login_pw" class="form-control" placeholder="Şifrenizi girin">
+                    <input type="password" id="login_pw" class="form-control">
                 </div>
                 <button id="btnLogin" class="btn btn-primary w-100 fw-bold">Sisteme Giriş</button>
             </div>
         </div>
         <div class="col-md-2 d-flex align-items-center justify-content-center">
             <div class="auth-divider d-none d-md-block"></div>
-            <span class="bg-f0f2f5 px-2 text-muted small d-md-none">VEYA</span>
         </div>
-        <div class="col-md-5" id="signup-section">
+        <div class="col-md-5">
             <div class="auth-card">
                 <h4 class="text-center fw-bold mb-4 text-success">YENİ PERSONEL</h4>
-                <div class="mb-2">
-                    <label class="small fw-bold">Ad Soyad</label>
-                    <input type="text" id="auth_name" class="form-control" placeholder="Adınız ve Soyadınız">
-                </div>
-                <div class="mb-2">
-                    <label class="small fw-bold">E-posta</label>
-                    <input type="email" id="auth_email" class="form-control" placeholder="E-posta adresi">
-                </div>
-                <div class="mb-2">
-                    <label class="small fw-bold">Şifre</label>
-                    <input type="password" id="auth_pw" class="form-control" placeholder="Şifre oluşturun">
-                </div>
-                <div class="mb-3">
-                    <label class="small fw-bold">Şifre Tekrar</label>
-                    <input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifreyi onaylayın">
-                </div>
+                <div class="mb-2"><input type="text" id="auth_name" class="form-control" placeholder="Ad Soyad"></div>
+                <div class="mb-2"><input type="email" id="auth_email" class="form-control" placeholder="E-posta"></div>
+                <div class="mb-2"><input type="password" id="auth_pw" class="form-control" placeholder="Şifre"></div>
+                <div class="mb-3"><input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifre Tekrar"></div>
                 <button id="btnSignup" class="btn btn-success w-100 fw-bold">Kayıt Ol</button>
             </div>
         </div>
@@ -104,16 +89,22 @@
         </div>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
-            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL İNDİR</button>
+            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL</button>
             <button id="btnLogout" class="btn btn-sm btn-light fw-bold">Çıkış</button>
         </div>
     </nav>
 
     <div id="admin-panel" class="p-3 bg-white shadow-sm border-bottom hidden">
         <div class="row g-2 px-2">
-            <div class="col-md-4"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Firma / Kişi"></div>
-            <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Sevk Adresi"></div>
-            <div class="col-md-3"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Kişi / Telefon"></div>
+            <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri"></div>
+            <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Adres"></div>
+            <div class="col-md-2"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Telefon"></div>
+            <div class="col-md-2">
+                <select id="m_hazir_durum" class="form-select form-select-sm">
+                    <option value="false">⏳ BEKLEMEDE</option>
+                    <option value="true">✅ SEVKE HAZIR</option>
+                </select>
+            </div>
             <div class="col-md-2"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
         </div>
     </div>
@@ -136,9 +127,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, update, remove, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyB1B6mz6OBS_1LeLPzuxg7uoCdiOQfBt2g",
@@ -154,139 +144,80 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const auth = getAuth(app);
-    const messaging = getMessaging(app);
 
     const ADMIN_EMAIL = "emrah@imesspor.com";
+    const KAYIT_EKIBI = ["eren@imesspor.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com", "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com", "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com", "melisa@imesspor.com", "alimran@imesspor.com"];
+
     let isAdmin = false;
     let tumIsler = [];
     let currentEditingId = null;
-
-    // --- BİLDİRİM FONKSİYONLARI ---
-    async function requestPermission() {
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                const token = await getToken(messaging, { 
-                    vapidKey: 'BHfUHkdSpALVbXc1uEHNkkUop7BEdolylk0j3vdWIWpt62SgTd5Sfm5TGIgrfVGERnKXzgzH7ks8iJSH3V8Xd7k' 
-                });
-                if (token && auth.currentUser) {
-                    await set(ref(db, 'fcmTokens/' + auth.currentUser.uid), {
-                        token: token,
-                        email: auth.currentUser.email
-                    });
-                }
-            }
-        } catch (error) { console.error("Bildirim hatası:", error); }
-    }
-
-    onMessage(messaging, (payload) => {
-        alert(`🔔 BİLDİRİM: ${payload.notification.title}\n${payload.notification.body}`);
-    });
-
-    function notifyTrigger(title, body) {
-        console.log("Bildirim Tetiklendi:", title, body);
-        // Gerçek bildirim gönderimi için Cloud Functions gereklidir.
-    }
-    // ----------------------------
 
     onAuthStateChanged(auth, (user) => {
         document.getElementById('auth-wrapper').style.display = user ? 'none' : 'block';
         document.getElementById('app-content').style.display = user ? 'block' : 'none';
         if(user) {
             isAdmin = (user.email === ADMIN_EMAIL);
+            const canManage = isAdmin || KAYIT_EKIBI.includes(user.email);
             document.getElementById('active-user').innerText = (isAdmin ? "⭐ " : "👤 ") + (user.displayName || user.email);
-            if(isAdmin) {
-                document.getElementById('admin-panel').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-panel').classList.add('hidden');
-            }
+            if(canManage) document.getElementById('admin-panel').classList.remove('hidden');
             verileriYukle();
-            requestPermission();
         }
     });
 
     document.getElementById('btnLogin').onclick = () => {
-        const email = document.getElementById('login_email').value;
-        const pw = document.getElementById('login_pw').value;
-        if(!email || !pw) return alert("E-posta ve şifre gereklidir!");
-        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Giriş Hatası!"));
+        signInWithEmailAndPassword(auth, document.getElementById('login_email').value, document.getElementById('login_pw').value).catch(e => alert("Giriş Hatası!"));
     };
 
     document.getElementById('btnSignup').onclick = () => {
         const name = document.getElementById('auth_name').value;
         const email = document.getElementById('auth_email').value;
         const pw = document.getElementById('auth_pw').value;
-        const pwConfirm = document.getElementById('auth_pw_confirm').value;
-        if(!name || !email || !pw) return alert("Tüm alanları doldurunuz!");
-        if(pw !== pwConfirm) return alert("Şifreler eşleşmiyor!");
-        createUserWithEmailAndPassword(auth, email, pw)
-            .then(u => updateProfile(u.user, {displayName: name}))
-            .catch(e => alert("Kayıt Hatası: " + e.message));
+        if(pw !== document.getElementById('auth_pw_confirm').value) return alert("Şifreler eşleşmiyor!");
+        createUserWithEmailAndPassword(auth, email, pw).then(u => updateProfile(u.user, {displayName: name})).catch(e => alert(e.message));
     };
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
     document.getElementById('btnExcel').onclick = () => {
-        if(tumIsler.length === 0) return alert("İndirilecek veri bulunamadı!");
-        let html = `<table border="1"><tr style="background-color: #0d6efd; color: white;"><th>MUSTERI ADI</th><th>BOLGE</th><th>TELEFON</th><th>DURUM</th><th>KAYIT TARIHI</th><th>KAYIT YAPAN</th><th>SEVK TARIHI</th><th>SEVK YAPAN</th><th>KURULUM TARIHI</th><th>KURULUM YAPAN</th><th>NOTLAR</th></tr>`;
+        let html = `<table border="1"><tr><th>MUSTERI</th><th>ADRES</th><th>DURUM</th><th>HAZIRLIK</th><th>KAYIT</th></tr>`;
         tumIsler.forEach(m => {
-            let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDILDI" : "BEKLIYOR");
-            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${m.tel || '-'}</td><td>${durum}</td><td>${m.kayitTarihi}</td><td>${m.kayitYapan || ''}</td><td>${m.sevkTarihi || ''}</td><td>${m.sevkYapan || ''}</td><td>${m.kurulumTarihi || ''}</td><td>${m.kurulumYapan || ''}</td><td>${m.aciklama || ''}</td></tr>`;
+            let durum = m.kurulumDurum ? "TAMAM" : (m.sevkDurum ? "SEVK" : "BEKLIYOR");
+            let hazirlik = m.hazirDurum === "true" || m.hazirDurum === true ? "HAZIR" : "BEKLEMEDE";
+            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${durum}</td><td>${hazirlik}</td><td>${m.kayitTarihi}</td></tr>`;
         });
-        html += "</table>";
-        const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `IMES_SPOR_RAPOR_${new Date().toLocaleDateString('tr-TR')}.xls`;
-        a.click();
+        const blob = new Blob(['\ufeff', html + "</table>"], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_RAPOR.xls`; a.click();
     };
 
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
-        if(!isAdmin) return alert("Yetkiniz yok!");
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
-        const currentUser = auth.currentUser.displayName || auth.currentUser.email;
         if(ad && bolge) {
             push(ref(db, 'isler/'), { 
-                ad: ad.toUpperCase(), 
-                bolge: bolge.toUpperCase(), 
-                tel: document.getElementById('m_iletisim').value,
-                aciklama: "", 
-                kayitTarihi: getTarih(), 
-                timestamp: Date.now(),
-                sevkDurum: false, 
-                kurulumDurum: false,
-                kayitYapan: currentUser
-            }).then(() => {
-                notifyTrigger("YENİ KAYIT", `${ad.toUpperCase()} için iş açıldı.`);
+                ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
+                hazirDurum: document.getElementById('m_hazir_durum').value, aciklama: "", kayitTarihi: getTarih(), 
+                timestamp: Date.now(), sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email
             });
-            document.getElementById('m_adi').value = "";
-            document.getElementById('m_bolge').value = "";
-            document.getElementById('m_iletisim').value = "";
+            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = "";
         }
     };
 
     function verileriYukle() {
         onValue(ref(db, 'isler/'), (snap) => {
             const data = snap.val();
-            if(!data) { tumIsler = []; ekranaBas([]); return; }
-            tumIsler = Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp);
+            tumIsler = data ? Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp) : [];
             ekranaBas(tumIsler);
         });
     }
 
-    document.getElementById('search_input').oninput = (e) => {
-        const ara = e.target.value.toLocaleLowerCase('tr-TR');
-        const filtrelenmis = tumIsler.filter(m => {
-            const ad = (m.ad || "").toLocaleLowerCase('tr-TR');
-            const bolge = (m.bolge || "").toLocaleLowerCase('tr-TR');
-            const aciklama = (m.aciklama || "").toLocaleLowerCase('tr-TR');
-            return ad.includes(ara) || bolge.includes(ara) || aciklama.includes(ara);
-        });
-        ekranaBas(filtrelenmis);
+    // --- DURUM DEĞİŞTİRME FONKSİYONU ---
+    window.toggleHazirDurum = (id, currentStatus) => {
+        const canEdit = isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email);
+        if(!canEdit) return;
+        const newStatus = (currentStatus === "true" || currentStatus === true) ? "false" : "true";
+        update(ref(db), { [`isler/${id}/hazirDurum`]: newStatus });
     };
 
     function ekranaBas(liste) {
@@ -296,44 +227,35 @@
 
         liste.forEach(m => {
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
-            let detay = `Kayıt: ${m.kayitYapan || 'Belirsiz'}`;
-            if(m.sevkDurum) detay += `<br>Sevk: ${m.sevkYapan || ''} (${m.sevkTarihi || ''})`;
-            if(m.kurulumDurum) detay += `<br>Kurulum: ${m.kurulumYapan || ''} (${m.kurulumTarihi || ''})`;
-
-            let adminControls = "";
-            if(isAdmin) {
-                let undoBtn = "";
-                if (m.kurulumDurum) {
-                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩  Geri Al</a>`;
-                } else if (m.sevkDurum) {
-                    undoBtn = `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Geri Al</a>`;
-                }
-                adminControls = `<div class="d-flex align-items-center gap-2">${undoBtn}<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span></div>`;
-            }
-
-            let editInfoBtn = (isAdmin && !m.sevkDurum) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold me-2" style="font-size:0.65rem;">✏️ MÜŞTERİ GÜNCELLE</button>` : "";
-            const noteClass = (m.aciklama && m.aciklama.trim() !== "") ? "has-note-blink" : "";
+            let isHazir = m.hazirDurum === "true" || m.hazirDurum === true;
+            let hazirBadge = !m.sevkDurum ? `<span onclick="toggleHazirDurum('${m.id}', ${isHazir})" class="status-badge ${isHazir ? 'badge-ready' : 'badge-wait'}">${isHazir ? '✅ SEVKE HAZIR' : '⏳ BEKLEMEDE'}</span>` : "";
 
             const html = `
                 <div class="card p-3 ${cls}">
-                    <div class="d-flex justify-content-between align-items-start"><div id="display-ad-${m.id}" class="fw-bold fs-6">${m.ad}</div>${adminControls}</div>
-                    <div class="text-muted small">📍 <span id="display-bolge-${m.id}">${m.bolge}</span> | 📞 <span id="display-tel-${m.id}">${m.tel || '-'}</span></div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        ${hazirBadge}
+                        ${isAdmin ? `<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>` : ''}
+                    </div>
+                    <div class="fw-bold fs-6">${m.ad}</div>
+                    <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
+                    <div class="mt-2 py-1 border-top border-bottom d-flex justify-content-between align-items-center">
+                        <button onclick="openNoteModal('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold ${(m.aciklama) ? 'has-note-blink' : ''}" style="font-size:0.75rem;">💭 NOTLAR</button>
+                        ${(isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email)) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold" style="font-size:0.65rem;">✏️ GÜNCELLE</button>` : ''}
+                    </div>
+                    
                     <div id="edit-fields-${m.id}" class="hidden mt-2 p-2 border rounded bg-white">
                         <input type="text" id="edit-ad-${m.id}" class="form-control form-control-sm mb-1" value="${m.ad}">
                         <input type="text" id="edit-bolge-${m.id}" class="form-control form-control-sm mb-1" value="${m.bolge}">
                         <input type="text" id="edit-tel-${m.id}" class="form-control form-control-sm mb-1" value="${m.tel || ''}">
                         <button onclick="saveCustomerInfo('${m.id}')" class="btn btn-xs btn-success w-100 fw-bold" style="font-size:0.7rem;">KAYDET</button>
                     </div>
-                    <div class="mt-2 py-1 border-top border-bottom d-flex justify-content-between align-items-center">
-                        <button onclick="openNoteModal('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold ${noteClass}" style="font-size:0.75rem;">💭 NOT EKLE / OKU</button>
-                        ${editInfoBtn}
-                    </div>
+
                     <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                     <div class="mt-2 d-flex gap-1">
                         <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK EDİLDİ' : '🚚 SEVK ET'}</button>
                         <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
                     </div>
-                    <div class="user-badge">${detay}</div>
+                    <div class="user-badge">Kayıt: ${m.kayitYapan || ''}</div>
                 </div>`;
             
             if(!m.sevkDurum) { lists.bekleyen.innerHTML += html; counts.b++; } 
@@ -347,75 +269,28 @@
 
     window.openNoteModal = (id) => {
         const is = tumIsler.find(x => x.id === id);
-        if(!is) return;
-        currentEditingId = id;
-        document.getElementById('modal-textarea').value = is.aciklama || "";
+        currentEditingId = id; document.getElementById('modal-textarea').value = is.aciklama || "";
         document.getElementById('note-modal').classList.remove('hidden');
-        document.getElementById('modal-textarea').focus();
     };
-
-    window.closeNoteModal = () => {
-        document.getElementById('note-modal').classList.add('hidden');
-        currentEditingId = null;
-    };
-
+    window.closeNoteModal = () => document.getElementById('note-modal').classList.add('hidden');
     document.getElementById('btn-save-note').onclick = () => {
-        if(!currentEditingId) return;
-        const val = document.getElementById('modal-textarea').value.trim();
-        update(ref(db), { [`isler/${currentEditingId}/aciklama`]: val }).then(() => {
-            closeNoteModal();
-        });
+        update(ref(db), { [`isler/${currentEditingId}/aciklama`]: document.getElementById('modal-textarea').value.trim() }).then(closeNoteModal);
     };
-
-    window.editCustomerInfo = (id) => { document.getElementById(`edit-fields-${id}`).classList.toggle('hidden'); };
-
+    window.editCustomerInfo = (id) => document.getElementById(`edit-fields-${id}`).classList.toggle('hidden');
     window.saveCustomerInfo = (id) => {
-        const newAd = document.getElementById(`edit-ad-${id}`).value.toUpperCase();
-        const newBolge = document.getElementById(`edit-bolge-${id}`).value.toUpperCase();
-        const newTel = document.getElementById(`edit-tel-${id}`).value;
-        if(confirm("Müşteri bilgileri güncellensin mi?")) {
-            update(ref(db), { [`isler/${id}/ad`]: newAd, [`isler/${id}/bolge`]: newBolge, [`isler/${id}/tel`]: newTel }).then(() => {
-                document.getElementById(`edit-fields-${id}`).classList.add('hidden');
-            });
-        }
+        update(ref(db), { 
+            [`isler/${id}/ad`]: document.getElementById(`edit-ad-${id}`).value.toUpperCase(),
+            [`isler/${id}/bolge`]: document.getElementById(`edit-bolge-${id}`).value.toUpperCase(),
+            [`isler/${id}/tel`]: document.getElementById(`edit-tel-${id}`).value
+        }).then(() => document.getElementById(`edit-fields-${id}`).classList.add('hidden'));
     };
-
-    window.deleteRecord = (id) => {
-        if(!isAdmin) return alert("Silme yetkiniz yok!");
-        if(confirm("Bu kaydı kalıcı olarak silmek istediğinize emin misiniz?")) { remove(ref(db, `isler/${id}`)); }
-    };
-
-    window.undoAction = (id, type) => {
-        if(!isAdmin) return alert("Geri alma yetkiniz yok!");
-        if(confirm("İşlemi geri almak istediğinize emin misiniz?")) {
-            const up = {};
-            if (type === 'kurulum') {
-                up[`isler/${id}/kurulumDurum`] = false;
-                up[`isler/${id}/kurulumTarihi`] = null;
-                up[`isler/${id}/kurulumYapan`] = null;
-            } else if (type === 'sevk') {
-                up[`isler/${id}/sevkDurum`] = false;
-                up[`isler/${id}/sevkTarihi`] = null;
-                up[`isler/${id}/sevkYapan`] = null;
-            }
+    window.deleteRecord = (id) => { if(confirm("Silinsin mi?")) remove(ref(db, `isler/${id}`)); };
+    window.updateStatus = (id, type) => {
+        if(confirm("İşlem yapılsın mı?")) {
+            const up = {}; up[`isler/${id}/${type}Durum`] = true; up[`isler/${id}/${type}Tarihi`] = getTarih(); 
+            up[`isler/${id}/${type}Yapan`] = auth.currentUser.displayName || auth.currentUser.email;
             up[`isler/${id}/timestamp`] = Date.now();
             update(ref(db), up);
-        }
-    };
-
-    window.updateStatus = (id, type) => {
-        const islemAdi = type === 'sevk' ? 'Sevk Edildi' : 'Kurulum Tamamlandı';
-        if(confirm(`${islemAdi} olarak işaretlensin mi?`)) {
-            const currentUser = auth.currentUser.displayName || auth.currentUser.email;
-            const up = {}; 
-            up[`isler/${id}/${type}Durum`] = true; 
-            up[`isler/${id}/${type}Tarihi`] = getTarih(); 
-            up[`isler/${id}/${type}Yapan`] = currentUser;
-            up[`isler/${id}/timestamp`] = Date.now();
-            update(ref(db), up).then(() => {
-                const is = tumIsler.find(x => x.id === id);
-                notifyTrigger("DURUM GÜNCELLEME", `${is.ad} - ${islemAdi.toUpperCase()}`);
-            });
         }
     };
 </script>
