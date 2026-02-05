@@ -22,7 +22,7 @@
         .header-bekleyen { background: #fff3cd; color: #856404; border-bottom: 3px solid #ffc107; }
         .header-sevk { background: #cff4fc; color: #055160; border-bottom: 3px solid #0dcaf0; }
         .header-tamam { background: #d1e7dd; color: #0f5132; border-bottom: 3px solid #198754; }
-        .user-badge { font-size: 0.7rem; color: #6c757d; font-style: italic; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; }
+        .user-badge { font-size: 0.65rem; color: #6c757d; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; line-height: 1.3; }
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
         .status-badge:hover { opacity: 0.8; transform: scale(1.05); }
         .badge-ready { background: #198754; color: white; }
@@ -30,9 +30,11 @@
         .hidden { display: none !important; }
         .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; }
-        @keyframes blink-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        .has-note-blink { animation: blink-red 1s infinite; color: #dc3545 !important; }
+        .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
+        .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; transition: 0.2s; }
+        .btn-delete:hover { background: #dc3545; color: white; }
+        @keyframes blink-red { 0% { color: #0d6efd; transform: scale(1); } 50% { color: #dc3545; transform: scale(1.05); font-weight: 900; } 100% { color: #0d6efd; transform: scale(1); } }
+        .has-note-blink { animation: blink-red 1.5s infinite; }
         @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
@@ -41,7 +43,7 @@
 <div id="note-modal" class="custom-modal hidden">
     <div class="modal-box">
         <h6 class="fw-bold mb-3 border-bottom pb-2">📋 İŞ NOTLARI</h6>
-        <textarea id="modal-textarea" class="form-control" rows="6"></textarea>
+        <textarea id="modal-textarea" class="form-control" rows="6" placeholder="Açıklama veya notunuzu buraya yazın..."></textarea>
         <div class="d-flex gap-2 mt-3">
             <button onclick="closeNoteModal()" class="btn btn-sm btn-secondary w-50">Kapat</button>
             <button id="btn-save-note" class="btn btn-sm btn-primary w-50">Notu Kaydet</button>
@@ -56,25 +58,38 @@
                 <h4 class="text-center fw-bold mb-4">GİRİŞ YAP</h4>
                 <div class="mb-2">
                     <label class="small fw-bold">E-posta</label>
-                    <input type="email" id="login_email" class="form-control">
+                    <input type="email" id="login_email" class="form-control" placeholder="E-postanızı girin">
                 </div>
                 <div class="mb-3">
                     <label class="small fw-bold">Şifre</label>
-                    <input type="password" id="login_pw" class="form-control">
+                    <input type="password" id="login_pw" class="form-control" placeholder="Şifrenizi girin">
                 </div>
                 <button id="btnLogin" class="btn btn-primary w-100 fw-bold">Sisteme Giriş</button>
             </div>
         </div>
         <div class="col-md-2 d-flex align-items-center justify-content-center">
             <div class="auth-divider d-none d-md-block"></div>
+            <span class="bg-f0f2f5 px-2 text-muted small d-md-none">VEYA</span>
         </div>
-        <div class="col-md-5">
+        <div class="col-md-5" id="signup-section">
             <div class="auth-card">
                 <h4 class="text-center fw-bold mb-4 text-success">YENİ PERSONEL</h4>
-                <div class="mb-2"><input type="text" id="auth_name" class="form-control" placeholder="Ad Soyad"></div>
-                <div class="mb-2"><input type="email" id="auth_email" class="form-control" placeholder="E-posta"></div>
-                <div class="mb-2"><input type="password" id="auth_pw" class="form-control" placeholder="Şifre"></div>
-                <div class="mb-3"><input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifre Tekrar"></div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Ad Soyad</label>
+                    <input type="text" id="auth_name" class="form-control" placeholder="Adınız ve Soyadınız">
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">E-posta</label>
+                    <input type="email" id="auth_email" class="form-control" placeholder="E-posta adresi">
+                </div>
+                <div class="mb-2">
+                    <label class="small fw-bold">Şifre</label>
+                    <input type="password" id="auth_pw" class="form-control" placeholder="Şifre oluşturun">
+                </div>
+                <div class="mb-3">
+                    <label class="small fw-bold">Şifre Tekrar</label>
+                    <input type="password" id="auth_pw_confirm" class="form-control" placeholder="Şifreyi onaylayın">
+                </div>
                 <button id="btnSignup" class="btn btn-success w-100 fw-bold">Kayıt Ol</button>
             </div>
         </div>
@@ -89,16 +104,16 @@
         </div>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
-            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL</button>
+            <button id="btnExcel" class="btn btn-sm btn-success fw-bold me-2">📊 EXCEL İNDİR</button>
             <button id="btnLogout" class="btn btn-sm btn-light fw-bold">Çıkış</button>
         </div>
     </nav>
 
     <div id="admin-panel" class="p-3 bg-white shadow-sm border-bottom hidden">
         <div class="row g-2 px-2">
-            <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Müşteri"></div>
-            <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Adres"></div>
-            <div class="col-md-2"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Telefon"></div>
+            <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Firma / Kişi"></div>
+            <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Sevk Adresi"></div>
+            <div class="col-md-2"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Kişi / Telefon"></div>
             <div class="col-md-2">
                 <select id="m_hazir_durum" class="form-select form-select-sm">
                     <option value="false">⏳ BEKLEMEDE</option>
@@ -165,7 +180,9 @@
     });
 
     document.getElementById('btnLogin').onclick = () => {
-        signInWithEmailAndPassword(auth, document.getElementById('login_email').value, document.getElementById('login_pw').value).catch(e => alert("Giriş Hatası!"));
+        const email = document.getElementById('login_email').value;
+        const pw = document.getElementById('login_pw').value;
+        signInWithEmailAndPassword(auth, email, pw).catch(e => alert("Giriş Hatası!"));
     };
 
     document.getElementById('btnSignup').onclick = () => {
@@ -182,8 +199,8 @@
         let html = `<table border="1"><tr><th>MUSTERI</th><th>ADRES</th><th>DURUM</th><th>HAZIRLIK</th><th>KAYIT</th></tr>`;
         tumIsler.forEach(m => {
             let durum = m.kurulumDurum ? "TAMAM" : (m.sevkDurum ? "SEVK" : "BEKLIYOR");
-            let hazirlik = m.hazirDurum === "true" || m.hazirDurum === true ? "HAZIR" : "BEKLEMEDE";
-            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${durum}</td><td>${hazirlik}</td><td>${m.kayitTarihi}</td></tr>`;
+            let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
+            html += `<tr><td>${m.ad}</td><td>${m.bolge}</td><td>${durum}</td><td>${hazir}</td><td>${m.kayitTarihi}</td></tr>`;
         });
         const blob = new Blob(['\ufeff', html + "</table>"], { type: 'application/vnd.ms-excel' });
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_RAPOR.xls`; a.click();
@@ -212,11 +229,9 @@
         });
     }
 
-    // --- DURUM DEĞİŞTİRME FONKSİYONU ---
-    window.toggleHazirDurum = (id, currentStatus) => {
-        const canEdit = isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email);
-        if(!canEdit) return;
-        const newStatus = (currentStatus === "true" || currentStatus === true) ? "false" : "true";
+    window.toggleHazirDurum = (id, current) => {
+        if(!(isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email))) return;
+        const newStatus = (current === "true" || current === true) ? "false" : "true";
         update(ref(db), { [`isler/${id}/hazirDurum`]: newStatus });
     };
 
@@ -227,35 +242,40 @@
 
         liste.forEach(m => {
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
-            let isHazir = m.hazirDurum === "true" || m.hazirDurum === true;
+            let isHazir = (m.hazirDurum === "true" || m.hazirDurum === true);
             let hazirBadge = !m.sevkDurum ? `<span onclick="toggleHazirDurum('${m.id}', ${isHazir})" class="status-badge ${isHazir ? 'badge-ready' : 'badge-wait'}">${isHazir ? '✅ SEVKE HAZIR' : '⏳ BEKLEMEDE'}</span>` : "";
+
+            let adminControls = "";
+            if(isAdmin) {
+                let undoBtn = m.kurulumDurum ? `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'kurulum')" class="btn-undo">↩ Geri</a>` : (m.sevkDurum ? `<a href="javascript:void(0)" onclick="undoAction('${m.id}', 'sevk')" class="btn-undo">↩ Geri</a>` : "");
+                adminControls = `<div class="d-flex align-items-center gap-2">${undoBtn}<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span></div>`;
+            }
+
+            // İşlem yapanların detaylı dökümü
+            let detaySatirlari = [`<div><b>Kayıt:</b> ${m.kayitYapan || '-'} (${m.kayitTarihi})</div>`];
+            if(m.sevkDurum) detaySatirlari.push(`<div><b>Sevk:</b> ${m.sevkYapan || '-'} (${m.sevkTarihi})</div>`);
+            if(m.kurulumDurum) detaySatirlari.push(`<div><b>Kurulum:</b> ${m.kurulumYapan || '-'} (${m.kurulumTarihi})</div>`);
 
             const html = `
                 <div class="card p-3 ${cls}">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        ${hazirBadge}
-                        ${isAdmin ? `<span onclick="deleteRecord('${m.id}')" class="btn-delete">🗑 SİL</span>` : ''}
-                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">${hazirBadge}${adminControls}</div>
                     <div class="fw-bold fs-6">${m.ad}</div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
                     <div class="mt-2 py-1 border-top border-bottom d-flex justify-content-between align-items-center">
                         <button onclick="openNoteModal('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold ${(m.aciklama) ? 'has-note-blink' : ''}" style="font-size:0.75rem;">💭 NOTLAR</button>
                         ${(isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email)) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold" style="font-size:0.65rem;">✏️ GÜNCELLE</button>` : ''}
                     </div>
-                    
                     <div id="edit-fields-${m.id}" class="hidden mt-2 p-2 border rounded bg-white">
                         <input type="text" id="edit-ad-${m.id}" class="form-control form-control-sm mb-1" value="${m.ad}">
                         <input type="text" id="edit-bolge-${m.id}" class="form-control form-control-sm mb-1" value="${m.bolge}">
                         <input type="text" id="edit-tel-${m.id}" class="form-control form-control-sm mb-1" value="${m.tel || ''}">
                         <button onclick="saveCustomerInfo('${m.id}')" class="btn btn-xs btn-success w-100 fw-bold" style="font-size:0.7rem;">KAYDET</button>
                     </div>
-
-                    <div class="small mt-1 text-secondary">📅 ${m.kayitTarihi}</div>
                     <div class="mt-2 d-flex gap-1">
                         <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK EDİLDİ' : '🚚 SEVK ET'}</button>
                         <button onclick="updateStatus('${m.id}', 'kurulum')" class="btn btn-sm btn-outline-success w-50" ${m.kurulumDurum ? 'disabled' : ''}>${m.kurulumDurum ? '✅ KURULDU' : '🛠 KURULUM'}</button>
                     </div>
-                    <div class="user-badge">Kayıt: ${m.kayitYapan || ''}</div>
+                    <div class="user-badge">${detaySatirlari.join('')}</div>
                 </div>`;
             
             if(!m.sevkDurum) { lists.bekleyen.innerHTML += html; counts.b++; } 
@@ -268,8 +288,8 @@
     }
 
     window.openNoteModal = (id) => {
-        const is = tumIsler.find(x => x.id === id);
-        currentEditingId = id; document.getElementById('modal-textarea').value = is.aciklama || "";
+        currentEditingId = id;
+        document.getElementById('modal-textarea').value = tumIsler.find(x => x.id === id).aciklama || "";
         document.getElementById('note-modal').classList.remove('hidden');
     };
     window.closeNoteModal = () => document.getElementById('note-modal').classList.add('hidden');
@@ -278,20 +298,42 @@
     };
     window.editCustomerInfo = (id) => document.getElementById(`edit-fields-${id}`).classList.toggle('hidden');
     window.saveCustomerInfo = (id) => {
-        update(ref(db), { 
-            [`isler/${id}/ad`]: document.getElementById(`edit-ad-${id}`).value.toUpperCase(),
-            [`isler/${id}/bolge`]: document.getElementById(`edit-bolge-${id}`).value.toUpperCase(),
-            [`isler/${id}/tel`]: document.getElementById(`edit-tel-${id}`).value
-        }).then(() => document.getElementById(`edit-fields-${id}`).classList.add('hidden'));
+        if(confirm("Müşteri bilgileri güncellensin mi?")) {
+            update(ref(db), { 
+                [`isler/${id}/ad`]: document.getElementById(`edit-ad-${id}`).value.toUpperCase(),
+                [`isler/${id}/bolge`]: document.getElementById(`edit-bolge-${id}`).value.toUpperCase(),
+                [`isler/${id}/tel`]: document.getElementById(`edit-tel-${id}`).value
+            }).then(() => document.getElementById(`edit-fields-${id}`).classList.add('hidden'));
+        }
     };
-    window.deleteRecord = (id) => { if(confirm("Silinsin mi?")) remove(ref(db, `isler/${id}`)); };
+    window.deleteRecord = (id) => { if(confirm("Bu kayıt kalıcı olarak silinsin mi?")) remove(ref(db, `isler/${id}`)); };
+    
+    window.undoAction = (id, type) => {
+        if(confirm("Bu işlemi geri almak istediğinize emin misiniz?")) {
+            const up = {}; 
+            up[`isler/${id}/${type}Durum`] = false; 
+            up[`isler/${id}/${type}Tarihi`] = null; 
+            up[`isler/${id}/${type}Yapan`] = null;
+            up[`isler/${id}/timestamp`] = Date.now();
+            update(ref(db), up);
+        }
+    };
+    
     window.updateStatus = (id, type) => {
-        if(confirm("İşlem yapılsın mı?")) {
-            const up = {}; up[`isler/${id}/${type}Durum`] = true; up[`isler/${id}/${type}Tarihi`] = getTarih(); 
+        const msg = type === 'sevk' ? 'Sevk edildi olarak işaretlensin mi?' : 'Kurulum tamamlandı olarak işaretlensin mi?';
+        if(confirm(msg)) {
+            const up = {}; 
+            up[`isler/${id}/${type}Durum`] = true; 
+            up[`isler/${id}/${type}Tarihi`] = getTarih(); 
             up[`isler/${id}/${type}Yapan`] = auth.currentUser.displayName || auth.currentUser.email;
             up[`isler/${id}/timestamp`] = Date.now();
             update(ref(db), up);
         }
+    };
+
+    document.getElementById('search_input').oninput = (e) => {
+        const ara = e.target.value.toLocaleLowerCase('tr-TR');
+        ekranaBas(tumIsler.filter(m => (m.ad+m.bolge+m.aciklama).toLocaleLowerCase('tr-TR').includes(ara)));
     };
 </script>
 </body>
