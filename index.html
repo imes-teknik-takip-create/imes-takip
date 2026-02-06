@@ -35,6 +35,8 @@
         .btn-delete:hover { background: #dc3545; color: white; }
         @keyframes blink-red { 0% { color: #0d6efd; transform: scale(1); } 50% { color: #dc3545; transform: scale(1.05); font-weight: 900; } 100% { color: #0d6efd; transform: scale(1); } }
         .has-note-blink { animation: blink-red 1.5s infinite; }
+        /* Tarih inputu büyütüldü ve rengi koyulaştırıldı */
+        .date-input-mini { border: 1px solid #ced4da; border-radius: 4px; font-size: 0.85rem; padding: 2px 4px; width: 125px; font-weight: bold; color: #333; height: 28px; }
         @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
@@ -112,15 +114,18 @@
     <div id="admin-panel" class="p-3 bg-white shadow-sm border-bottom hidden">
         <div class="row g-2 px-2">
             <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Firma / Kişi"></div>
-            <div class="col-md-3"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Sevk Adresi"></div>
+            <div class="col-md-2"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Sevk Adresi"></div>
             <div class="col-md-2"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Kişi / Telefon"></div>
+            <div class="col-md-2">
+                <input type="date" id="m_muhtemel_tarih" class="form-control form-control-sm">
+            </div>
             <div class="col-md-2">
                 <select id="m_hazir_durum" class="form-select form-select-sm">
                     <option value="false">⏳ BEKLEMEDE</option>
                     <option value="true">✅ SEVKE HAZIR</option>
                 </select>
             </div>
-            <div class="col-md-2"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
+            <div class="col-md-1"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
         </div>
     </div>
 
@@ -200,6 +205,7 @@
             <tr style="background:#0d6efd; color:white;">
                 <th>MÜŞTERİ / FİRMA</th>
                 <th>SEVK ADRESİ</th>
+                <th>MUHTEMEL SEVK</th>
                 <th>DURUM</th>
                 <th>HAZIRLIK</th>
                 <th>KAYIT (KİM & NE ZAMAN)</th>
@@ -219,6 +225,7 @@
             html += `<tr>
                 <td>${m.ad}</td>
                 <td>${m.bolge}</td>
+                <td>${m.muhtemelTarih || '-'}</td>
                 <td>${durum}</td>
                 <td>${hazir}</td>
                 <td>${kayitBilgi}</td>
@@ -237,13 +244,15 @@
     document.getElementById('btnKaydet').onclick = () => {
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
+        const muhtemel = document.getElementById('m_muhtemel_tarih').value;
         if(ad && bolge) {
             push(ref(db, 'isler/'), { 
                 ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
+                muhtemelTarih: muhtemel,
                 hazirDurum: document.getElementById('m_hazir_durum').value, aciklama: "", kayitTarihi: getTarih(), 
                 timestamp: Date.now(), sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email
             });
-            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = "";
+            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = ""; document.getElementById('m_muhtemel_tarih').value = "";
         }
     };
 
@@ -261,6 +270,10 @@
         update(ref(db), { [`isler/${id}/hazirDurum`]: newStatus });
     };
 
+    window.updateDirectDate = (id, val) => {
+        update(ref(db), { [`isler/${id}/muhtemelTarih`]: val });
+    };
+
     function ekranaBas(liste) {
         const lists = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
         const counts = { b: 0, s: 0, t: 0 };
@@ -270,6 +283,8 @@
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
             let isHazir = (m.hazirDurum === "true" || m.hazirDurum === true);
             let hazirBadge = !m.sevkDurum ? `<span onclick="toggleHazirDurum('${m.id}', ${isHazir})" class="status-badge ${isHazir ? 'badge-ready' : 'badge-wait'}">${isHazir ? '✅ SEVKE HAZIR' : '⏳ BEKLEMEDE'}</span>` : "";
+            
+            let dateQuickEdit = !m.sevkDurum ? `<input type="date" class="date-input-mini ms-1" value="${m.muhtemelTarih || ''}" onchange="updateDirectDate('${m.id}', this.value)">` : '';
 
             let adminControls = "";
             if(isAdmin) {
@@ -283,7 +298,10 @@
 
             const html = `
                 <div class="card p-3 ${cls}">
-                    <div class="d-flex justify-content-between align-items-center mb-1">${hazirBadge}${adminControls}</div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="d-flex align-items-center">${hazirBadge}${dateQuickEdit}</div>
+                        ${adminControls}
+                    </div>
                     <div class="fw-bold fs-6">${m.ad}</div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
                     <div class="mt-2 py-1 border-top border-bottom d-flex justify-content-between align-items-center">
@@ -291,10 +309,15 @@
                         ${(isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email)) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold" style="font-size:0.65rem;">✏️ GÜNCELLE</button>` : ''}
                     </div>
                     <div id="edit-fields-${m.id}" class="hidden mt-2 p-2 border rounded bg-white">
+                        <label class="small fw-bold">Firma Adı</label>
                         <input type="text" id="edit-ad-${m.id}" class="form-control form-control-sm mb-1" value="${m.ad}">
+                        <label class="small fw-bold">Bölge</label>
                         <input type="text" id="edit-bolge-${m.id}" class="form-control form-control-sm mb-1" value="${m.bolge}">
+                        <label class="small fw-bold">Telefon</label>
                         <input type="text" id="edit-tel-${m.id}" class="form-control form-control-sm mb-1" value="${m.tel || ''}">
-                        <button onclick="saveCustomerInfo('${m.id}')" class="btn btn-xs btn-success w-100 fw-bold" style="font-size:0.7rem;">KAYDET</button>
+                        <label class="small fw-bold">Muhtemel Sevk Tarihi</label>
+                        <input type="date" id="edit-muhtemel-${m.id}" class="form-control form-control-sm mb-2" value="${m.muhtemelTarih || ''}">
+                        <button onclick="saveCustomerInfo('${m.id}')" class="btn btn-xs btn-success w-100 fw-bold" style="font-size:0.7rem;">DEĞİŞİKLİKLERİ KAYDET</button>
                     </div>
                     <div class="mt-2 d-flex gap-1">
                         <button onclick="updateStatus('${m.id}', 'sevk')" class="btn btn-sm btn-outline-primary w-50" ${m.sevkDurum ? 'disabled' : ''}>${m.sevkDurum ? '✅ SEVK EDİLDİ' : '🚚 SEVK ET'}</button>
@@ -327,7 +350,8 @@
             update(ref(db), { 
                 [`isler/${id}/ad`]: document.getElementById(`edit-ad-${id}`).value.toUpperCase(),
                 [`isler/${id}/bolge`]: document.getElementById(`edit-bolge-${id}`).value.toUpperCase(),
-                [`isler/${id}/tel`]: document.getElementById(`edit-tel-${id}`).value
+                [`isler/${id}/tel`]: document.getElementById(`edit-tel-${id}`).value,
+                [`isler/${id}/muhtemelTarih`]: document.getElementById(`edit-muhtemel-${id}`).value
             }).then(() => document.getElementById(`edit-fields-${id}`).classList.add('hidden'));
         }
     };
