@@ -116,7 +116,7 @@
     <nav class="navbar navbar-dark bg-primary shadow-sm px-3 w-100">
         <span class="navbar-brand fw-bold">İMES SPOR TEKNİK TAKİP</span>
         <div class="flex-grow-1 mx-4">
-            <input type="text" id="search_input" class="form-control form-control-sm w-50" placeholder="🔍 Ara...">
+            <input type="text" id="search_input" class="form-control form-control-sm w-50" placeholder="🔍 Ara (Müşteri, Bölge, Not...)">
         </div>
         <div class="d-flex align-items-center">
             <span id="active-user" class="text-white me-3 small fw-bold"></span>
@@ -293,12 +293,13 @@
     const getTarih = () => new Date().toLocaleString('tr-TR');
 
     document.getElementById('btnKaydet').onclick = () => {
-        const ad = document.getElementById('m_adi').value;
-        const bolge = document.getElementById('m_bolge').value;
+        const ad = document.getElementById('m_adi').value.trim();
+        const bolge = document.getElementById('m_bolge').value.trim();
         const muhtemel = document.getElementById('m_muhtemel_tarih').value;
         const kurulumSecimi = document.getElementById('m_kurulum_gereksinimi').value;
 
         if(ad && bolge) {
+            document.getElementById('btnKaydet').disabled = true; // Çift tıklamayı engelle
             push(ref(db, 'isler/'), { 
                 ad: ad.toUpperCase(), 
                 bolge: bolge.toUpperCase(), 
@@ -312,11 +313,15 @@
                 kurulumDurum: false, 
                 kayitYapan: auth.currentUser.displayName || auth.currentUser.email,
                 kurulumGereksinimi: kurulumSecimi
+            }).then(() => {
+                document.getElementById('btnKaydet').disabled = false;
+                document.getElementById('m_adi').value = ""; 
+                document.getElementById('m_bolge').value = ""; 
+                document.getElementById('m_iletisim').value = ""; 
+                document.getElementById('m_muhtemel_tarih').value = "";
             });
-            document.getElementById('m_adi').value = ""; 
-            document.getElementById('m_bolge').value = ""; 
-            document.getElementById('m_iletisim').value = ""; 
-            document.getElementById('m_muhtemel_tarih').value = "";
+        } else {
+            alert("Lütfen Firma Adı ve Bölge bilgilerini doldurun!");
         }
     };
 
@@ -324,8 +329,17 @@
         onValue(ref(db, 'isler/'), (snap) => {
             const data = snap.val();
             tumIsler = data ? Object.keys(data).map(id => ({id, ...data[id]})).sort((a,b) => b.timestamp - a.timestamp) : [];
-            ekranaBas(tumIsler);
+            // Arama filtresini koruyarak ekrana bas
+            applySearchFilter();
         });
+    }
+
+    function applySearchFilter() {
+        const ara = document.getElementById('search_input').value.toLocaleLowerCase('tr-TR');
+        const filtrelenmis = tumIsler.filter(m => 
+            ( (m.ad||"") + (m.bolge||"") + (m.aciklama||"") + (m.tel||"") ).toLocaleLowerCase('tr-TR').includes(ara)
+        );
+        ekranaBas(filtrelenmis);
     }
 
     window.toggleHazirDurum = (id, current) => {
@@ -433,7 +447,7 @@
         document.getElementById('modal-textarea').value = text;
         localStorage.setItem(`seen_note_${id}`, text.length.toString());
         document.getElementById('note-modal').classList.remove('hidden');
-        ekranaBas(tumIsler);
+        applySearchFilter();
     };
 
     window.closeNoteModal = () => document.getElementById('note-modal').classList.add('hidden');
@@ -471,8 +485,8 @@
     };
     
     window.updateStatus = (id, type) => {
-        const isIndex = tumIsler.findIndex(x => x.id === id);
-        const job = tumIsler[isIndex];
+        const job = tumIsler.find(x => x.id === id);
+        if(!job) return;
         const isNoInstall = (job.kurulumGereksinimi === 'KURULUM YOK');
         
         let msg = type === 'sevk' ? 'Sevk edildi olarak işaretlensin mi?' : 'Kurulum tamamlandı olarak işaretlensin mi?';
@@ -504,10 +518,7 @@
         }
     };
 
-    document.getElementById('search_input').oninput = (e) => {
-        const ara = e.target.value.toLocaleLowerCase('tr-TR');
-        ekranaBas(tumIsler.filter(m => (m.ad+m.bolge+m.aciklama).toLocaleLowerCase('tr-TR').includes(ara)));
-    };
+    document.getElementById('search_input').oninput = applySearchFilter;
 </script>
 </body>
 </html>
