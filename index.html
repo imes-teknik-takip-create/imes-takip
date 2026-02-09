@@ -25,18 +25,33 @@
         .user-badge { font-size: 0.65rem; color: #6c757d; border-top: 1px solid #eee; margin-top: 8px; padding-top: 4px; line-height: 1.3; }
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
         .status-badge:hover { opacity: 0.8; transform: scale(1.05); }
-        .badge-ready { background: #198754; color: white; }
+        
+        /* SEVKE HAZIR VE NOTLAR İÇİN GÜNCEL ANİMASYON VE BEYAZ YAZI */
+        @keyframes blink-red { 
+            0% { transform: scale(1); box-shadow: 0 0 0px rgba(220, 53, 69, 0); } 
+            50% { transform: scale(1.05); box-shadow: 0 0 10px rgba(220, 53, 69, 1); } 
+            100% { transform: scale(1); box-shadow: 0 0 0px rgba(220, 53, 69, 0); } 
+        }
+        
+        .badge-ready { background: #198754 !important; color: white !important; animation: blink-red 1.5s infinite; }
         .badge-wait { background: #6c757d; color: white; }
+        .has-note-blink { animation: blink-red 1.5s infinite; color: #0d6efd !important; font-weight: 900 !important; font-size: 0.95rem !important; }
+        
         .hidden { display: none !important; }
         .custom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000; }
         .modal-box { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .btn-undo { font-size: 0.65rem; padding: 0 5px; text-decoration: none; color: #dc3545; font-weight: bold; }
         .btn-delete { font-size: 0.65rem; color: #dc3545; cursor: pointer; border: 1px solid #dc3545; border-radius: 4px; padding: 1px 4px; transition: 0.2s; }
         .btn-delete:hover { background: #dc3545; color: white; }
-        @keyframes blink-red { 0% { color: #0d6efd; transform: scale(1); } 50% { color: #dc3545; transform: scale(1.05); font-weight: 900; } 100% { color: #0d6efd; transform: scale(1); } }
-        .has-note-blink { animation: blink-red 1.5s infinite; }
-        /* Tarih inputu büyütüldü ve rengi koyulaştırıldı */
+        
         .date-input-mini { border: 1px solid #ced4da; border-radius: 4px; font-size: 0.85rem; padding: 2px 4px; width: 125px; font-weight: bold; color: #333; height: 28px; }
+
+        @keyframes pulse-ready-anim { 0% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); } 100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); } }
+        .pulse-ready { animation: pulse-ready-anim 2s infinite; border: 2px solid #198754 !important; }
+        .note-container { position: relative; display: inline-block; }
+        .note-badge { position: absolute; top: -10px; right: -12px; background: #dc3545; color: white; border-radius: 10px; padding: 1px 6px; font-size: 0.6rem; font-weight: 900; border: 1px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .install-select { font-size: 0.7rem; padding: 2px; border-radius: 4px; border: 1px solid #ced4da; margin-left: 5px; font-weight: bold; height: 28px; background: #fff; color: #000; }
+        
         @media (max-width: 768px) { .auth-divider { border-left: none; border-top: 1px solid #dee2e6; margin: 20px 0; } }
     </style>
 </head>
@@ -200,43 +215,60 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
+    /* RAPOR FONKSİYONU - 3 AYRI BÖLÜM */
     document.getElementById('btnExcel').onclick = () => {
-        let html = `<table border="1">
-            <tr style="background:#0d6efd; color:white;">
-                <th>MÜŞTERİ / FİRMA</th>
-                <th>SEVK ADRESİ</th>
-                <th>MUHTEMEL SEVK</th>
-                <th>DURUM</th>
-                <th>HAZIRLIK</th>
-                <th>KAYIT (KİM & NE ZAMAN)</th>
-                <th>SEVK (KİM & NE ZAMAN)</th>
-                <th>KURULUM (KİM & NE ZAMAN)</th>
-                <th>NOTLAR</th>
-            </tr>`;
+        const createTable = (liste, baslik, renk) => {
+            let table = `<h2 style="color:${renk};">${baslik}</h2>
+            <table border="1">
+                <tr style="background:${renk}; color:white;">
+                    <th>MÜŞTERİ / FİRMA</th>
+                    <th>SEVK ADRESİ</th>
+                    <th>MUHTEMEL SEVK</th>
+                    <th>DURUM</th>
+                    <th>HAZIRLIK</th>
+                    <th>KURULUM İHTİYACI</th>
+                    <th>KAYIT (KİM & NE ZAMAN)</th>
+                    <th>SEVK (KİM & NE ZAMAN)</th>
+                    <th>KURULUM (KİM & NE ZAMAN)</th>
+                    <th>NOTLAR</th>
+                </tr>`;
             
-        tumIsler.forEach(m => {
-            let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDİLDİ" : "BEKLİYOR");
-            let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
-            
-            let kayitBilgi = `${m.kayitYapan || '-'} | ${m.kayitTarihi || '-'}`;
-            let sevkBilgi = m.sevkDurum ? `${m.sevkYapan || '-'} | ${m.sevkTarihi || '-'}` : "-";
-            let kurulumBilgi = m.kurulumDurum ? `${m.kurulumYapan || '-'} | ${m.kurulumTarihi || '-'}` : "-";
+            liste.forEach(m => {
+                let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDİLDİ" : "BEKLİYOR");
+                let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
+                
+                let kayitBilgi = `${m.kayitYapan || '-'} | ${m.kayitTarihi || '-'}`;
+                let sevkBilgi = m.sevkDurum ? `${m.sevkYapan || '-'} | ${m.sevkTarihi || '-'}` : "-";
+                let kurulumBilgi = m.kurulumDurum ? `${m.kurulumYapan || '-'} | ${m.kurulumTarihi || '-'}` : "-";
 
-            html += `<tr>
-                <td>${m.ad}</td>
-                <td>${m.bolge}</td>
-                <td>${m.muhtemelTarih || '-'}</td>
-                <td>${durum}</td>
-                <td>${hazir}</td>
-                <td>${kayitBilgi}</td>
-                <td>${sevkBilgi}</td>
-                <td>${kurulumBilgi}</td>
-                <td>${m.aciklama || '-'}</td>
-            </tr>`;
-        });
+                table += `<tr>
+                    <td>${m.ad}</td>
+                    <td>${m.bolge}</td>
+                    <td>${m.muhtemelTarih || '-'}</td>
+                    <td>${durum}</td>
+                    <td>${hazir}</td>
+                    <td>${m.kurulumGereksinimi || 'KURULUM YOK'}</td>
+                    <td>${kayitBilgi}</td>
+                    <td>${sevkBilgi}</td>
+                    <td>${kurulumBilgi}</td>
+                    <td>${m.aciklama || '-'}</td>
+                </tr>`;
+            });
+            return table + "</table><br><br>";
+        };
+
+        const bekleyenler = tumIsler.filter(m => !m.sevkDurum);
+        const sevkEdilenler = tumIsler.filter(m => m.sevkDurum && !m.kurulumDurum);
+        const tamamlananlar = tumIsler.filter(m => m.kurulumDurum);
+
+        let finalHtml = `<html><head><meta charset="UTF-8"></head><body>`;
+        finalHtml += createTable(bekleyenler, "1. BEKLEYEN İŞLER", "#ffc107");
+        finalHtml += createTable(sevkEdilenler, "2. SEVK EDİLEN İŞLER", "#0dcaf0");
+        finalHtml += createTable(tamamlananlar, "3. TAMAMLANAN İŞLER", "#198754");
+        finalHtml += `</body></html>`;
         
-        const blob = new Blob(['\ufeff', html + "</table>"], { type: 'application/vnd.ms-excel' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_TEKNIK_DETAYLI_RAPOR.xls`; a.click();
+        const blob = new Blob(['\ufeff', finalHtml], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_DETAYLI_RAPOR.xls`; a.click();
     };
 
     const getTarih = () => new Date().toLocaleString('tr-TR');
@@ -250,7 +282,8 @@
                 ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
                 muhtemelTarih: muhtemel,
                 hazirDurum: document.getElementById('m_hazir_durum').value, aciklama: "", kayitTarihi: getTarih(), 
-                timestamp: Date.now(), sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email
+                timestamp: Date.now(), sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email,
+                kurulumGereksinimi: "KURULUM YOK"
             });
             document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = ""; document.getElementById('m_muhtemel_tarih').value = "";
         }
@@ -274,6 +307,10 @@
         update(ref(db), { [`isler/${id}/muhtemelTarih`]: val });
     };
 
+    window.updateInstallReq = (id, val) => {
+        update(ref(db), { [`isler/${id}/kurulumGereksinimi`]: val });
+    };
+
     function ekranaBas(liste) {
         const lists = { bekleyen: document.getElementById('liste-bekleyen'), sevk: document.getElementById('liste-sevk'), tamam: document.getElementById('liste-tamam') };
         const counts = { b: 0, s: 0, t: 0 };
@@ -282,9 +319,23 @@
         liste.forEach(m => {
             let cls = m.kurulumDurum ? "card-tamam" : (m.sevkDurum ? "card-sevk" : "card-bekleyen");
             let isHazir = (m.hazirDurum === "true" || m.hazirDurum === true);
+            
+            let pulseClass = (isHazir && !m.sevkDurum) ? "pulse-ready" : "";
+
             let hazirBadge = !m.sevkDurum ? `<span onclick="toggleHazirDurum('${m.id}', ${isHazir})" class="status-badge ${isHazir ? 'badge-ready' : 'badge-wait'}">${isHazir ? '✅ SEVKE HAZIR' : '⏳ BEKLEMEDE'}</span>` : "";
             
             let dateQuickEdit = !m.sevkDurum ? `<input type="date" class="date-input-mini ms-1" value="${m.muhtemelTarih || ''}" onchange="updateDirectDate('${m.id}', this.value)">` : '';
+
+            let installOption = `
+                <select class="install-select" onchange="updateInstallReq('${m.id}', this.value)">
+                    <option value="KURULUM VAR" ${m.kurulumGereksinimi === 'KURULUM VAR' ? 'selected' : ''}>🛠 KURULUM VAR</option>
+                    <option value="KURULUM YOK" ${m.kurulumGereksinimi === 'KURULUM YOK' ? 'selected' : ''}>🛠 KURULUM YOK</option>
+                </select>`;
+
+            let noteCount = m.aciklama ? m.aciklama.split('\n').filter(line => line.trim() !== "").length : 0;
+            let lastSeenLen = localStorage.getItem(`seen_note_${m.id}`) || "0";
+            let hasNewNote = m.aciklama && m.aciklama.length.toString() !== lastSeenLen;
+            let noteBadge = (noteCount > 0 && hasNewNote) ? `<span class="note-badge">${noteCount}</span>` : "";
 
             let adminControls = "";
             if(isAdmin) {
@@ -297,15 +348,18 @@
             if(m.kurulumDurum) detaySatirlari.push(`<div><b>Kurulum:</b> ${m.kurulumYapan || '-'} (${m.kurulumTarihi})</div>`);
 
             const html = `
-                <div class="card p-3 ${cls}">
+                <div class="card p-3 ${cls} ${pulseClass}">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <div class="d-flex align-items-center">${hazirBadge}${dateQuickEdit}</div>
+                        <div class="d-flex align-items-center">${hazirBadge}${dateQuickEdit}${installOption}</div>
                         ${adminControls}
                     </div>
                     <div class="fw-bold fs-6">${m.ad}</div>
                     <div class="text-muted small">📍 ${m.bolge} | 📞 ${m.tel || '-'}</div>
                     <div class="mt-2 py-1 border-top border-bottom d-flex justify-content-between align-items-center">
-                        <button onclick="openNoteModal('${m.id}')" class="btn btn-sm p-0 text-primary fw-bold ${(m.aciklama) ? 'has-note-blink' : ''}" style="font-size:0.75rem;">💭 NOTLAR</button>
+                        <div class="note-container">
+                            <button onclick="openNoteModal('${m.id}')" class="btn btn-sm p-0 fw-bold ${hasNewNote ? 'has-note-blink' : 'text-primary'}" style="font-size:1rem;">💭 NOTLAR</button>
+                            ${noteBadge}
+                        </div>
                         ${(isAdmin || KAYIT_EKIBI.includes(auth.currentUser.email)) ? `<button onclick="editCustomerInfo('${m.id}')" class="btn btn-sm p-0 text-dark fw-bold" style="font-size:0.65rem;">✏️ GÜNCELLE</button>` : ''}
                     </div>
                     <div id="edit-fields-${m.id}" class="hidden mt-2 p-2 border rounded bg-white">
@@ -337,13 +391,24 @@
 
     window.openNoteModal = (id) => {
         currentEditingId = id;
-        document.getElementById('modal-textarea').value = tumIsler.find(x => x.id === id).aciklama || "";
+        const job = tumIsler.find(x => x.id === id);
+        const text = job.aciklama || "";
+        document.getElementById('modal-textarea').value = text;
+        localStorage.setItem(`seen_note_${id}`, text.length.toString());
         document.getElementById('note-modal').classList.remove('hidden');
+        ekranaBas(tumIsler);
     };
+
     window.closeNoteModal = () => document.getElementById('note-modal').classList.add('hidden');
+    
     document.getElementById('btn-save-note').onclick = () => {
-        update(ref(db), { [`isler/${currentEditingId}/aciklama`]: document.getElementById('modal-textarea').value.trim() }).then(closeNoteModal);
+        const val = document.getElementById('modal-textarea').value.trim();
+        update(ref(db), { [`isler/${currentEditingId}/aciklama`]: val }).then(() => {
+            localStorage.setItem(`seen_note_${currentEditingId}`, val.length.toString());
+            closeNoteModal();
+        });
     };
+
     window.editCustomerInfo = (id) => document.getElementById(`edit-fields-${id}`).classList.toggle('hidden');
     window.saveCustomerInfo = (id) => {
         if(confirm("Müşteri bilgileri güncellensin mi?")) {
