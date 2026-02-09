@@ -26,7 +26,6 @@
         .status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
         .status-badge:hover { opacity: 0.8; transform: scale(1.05); }
         
-        /* SEVKE HAZIR VE NOTLAR İÇİN GÜNCEL ANİMASYON VE BEYAZ YAZI */
         @keyframes blink-red { 
             0% { transform: scale(1); box-shadow: 0 0 0px rgba(220, 53, 69, 0); } 
             50% { transform: scale(1.05); box-shadow: 0 0 10px rgba(220, 53, 69, 1); } 
@@ -215,60 +214,75 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-    /* RAPOR FONKSİYONU - 3 AYRI BÖLÜM */
+    /* GÜNCELLENMİŞ RAPOR FONKSİYONU - SEKMELİ YAPI */
     document.getElementById('btnExcel').onclick = () => {
-        const createTable = (liste, baslik, renk) => {
-            let table = `<h2 style="color:${renk};">${baslik}</h2>
-            <table border="1">
-                <tr style="background:${renk}; color:white;">
-                    <th>MÜŞTERİ / FİRMA</th>
-                    <th>SEVK ADRESİ</th>
-                    <th>MUHTEMEL SEVK</th>
-                    <th>DURUM</th>
-                    <th>HAZIRLIK</th>
-                    <th>KURULUM İHTİYACI</th>
-                    <th>KAYIT (KİM & NE ZAMAN)</th>
-                    <th>SEVK (KİM & NE ZAMAN)</th>
-                    <th>KURULUM (KİM & NE ZAMAN)</th>
-                    <th>NOTLAR</th>
-                </tr>`;
-            
-            liste.forEach(m => {
-                let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDİLDİ" : "BEKLİYOR");
-                let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
-                
-                let kayitBilgi = `${m.kayitYapan || '-'} | ${m.kayitTarihi || '-'}`;
-                let sevkBilgi = m.sevkDurum ? `${m.sevkYapan || '-'} | ${m.sevkTarihi || '-'}` : "-";
-                let kurulumBilgi = m.kurulumDurum ? `${m.kurulumYapan || '-'} | ${m.kurulumTarihi || '-'}` : "-";
-
-                table += `<tr>
-                    <td>${m.ad}</td>
-                    <td>${m.bolge}</td>
-                    <td>${m.muhtemelTarih || '-'}</td>
-                    <td>${durum}</td>
-                    <td>${hazir}</td>
-                    <td>${m.kurulumGereksinimi || 'KURULUM YOK'}</td>
-                    <td>${kayitBilgi}</td>
-                    <td>${sevkBilgi}</td>
-                    <td>${kurulumBilgi}</td>
-                    <td>${m.aciklama || '-'}</td>
-                </tr>`;
-            });
-            return table + "</table><br><br>";
-        };
-
         const bekleyenler = tumIsler.filter(m => !m.sevkDurum);
         const sevkEdilenler = tumIsler.filter(m => m.sevkDurum && !m.kurulumDurum);
         const tamamlananlar = tumIsler.filter(m => m.kurulumDurum);
 
-        let finalHtml = `<html><head><meta charset="UTF-8"></head><body>`;
-        finalHtml += createTable(bekleyenler, "1. BEKLEYEN İŞLER", "#ffc107");
-        finalHtml += createTable(sevkEdilenler, "2. SEVK EDİLEN İŞLER", "#0dcaf0");
-        finalHtml += createTable(tamamlananlar, "3. TAMAMLANAN İŞLER", "#198754");
-        finalHtml += `</body></html>`;
-        
-        const blob = new Blob(['\ufeff', finalHtml], { type: 'application/vnd.ms-excel' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `IMES_DETAYLI_RAPOR.xls`; a.click();
+        const getTableRows = (liste) => {
+            return liste.map(m => {
+                let durum = m.kurulumDurum ? "TAMAMLANDI" : (m.sevkDurum ? "SEVK EDİLDİ" : "BEKLİYOR");
+                let hazir = (m.hazirDurum === "true" || m.hazirDurum === true) ? "HAZIR" : "BEKLEMEDE";
+                return `
+                <Row>
+                    <Cell><Data ss:Type="String">${m.ad || '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.bolge || '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.muhtemelTarih || '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${durum}</Data></Cell>
+                    <Cell><Data ss:Type="String">${hazir}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.kurulumGereksinimi || 'YOK'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.kayitYapan || '-'} | ${m.kayitTarihi || '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.sevkDurum ? (m.sevkYapan + ' | ' + m.sevkTarihi) : '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.kurulumDurum ? (m.kurulumYapan + ' | ' + m.kurulumTarihi) : '-'}</Data></Cell>
+                    <Cell><Data ss:Type="String">${m.aciklama || '-'}</Data></Cell>
+                </Row>`;
+            }).join('');
+        };
+
+        const header = `
+            <Row ss:StyleID="headerStyle">
+                <Cell><Data ss:Type="String">MÜŞTERİ / FİRMA</Data></Cell>
+                <Cell><Data ss:Type="String">SEVK ADRESİ</Data></Cell>
+                <Cell><Data ss:Type="String">MUHTEMEL SEVK</Data></Cell>
+                <Cell><Data ss:Type="String">DURUM</Data></Cell>
+                <Cell><Data ss:Type="String">HAZIRLIK</Data></Cell>
+                <Cell><Data ss:Type="String">KURULUM</Data></Cell>
+                <Cell><Data ss:Type="String">KAYIT BİLGİSİ</Data></Cell>
+                <Cell><Data ss:Type="String">SEVK BİLGİSİ</Data></Cell>
+                <Cell><Data ss:Type="String">KURULUM BİLGİSİ</Data></Cell>
+                <Cell><Data ss:Type="String">NOTLAR</Data></Cell>
+            </Row>`;
+
+        let xml = `<?xml version="1.0"?>
+        <?mso-application progid="Excel.Sheet"?>
+        <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+         xmlns:o="urn:schemas-microsoft-com:office:office"
+         xmlns:x="urn:schemas-microsoft-com:office:excel"
+         xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+         xmlns:html="http://www.w3.org/TR/REC-html40">
+         <Styles>
+          <Style ss:ID="headerStyle">
+           <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+           <Interior ss:Color="#0d6efd" ss:Pattern="Solid"/>
+          </Style>
+         </Styles>
+         <Worksheet ss:Name="BEKLEYEN İŞLER">
+          <Table> ${header} ${getTableRows(bekleyenler)} </Table>
+         </Worksheet>
+         <Worksheet ss:Name="SEVK EDİLEN İŞLER">
+          <Table> ${header} ${getTableRows(sevkEdilenler)} </Table>
+         </Worksheet>
+         <Worksheet ss:Name="TAMAMLANAN İŞLER">
+          <Table> ${header} ${getTableRows(tamamlananlar)} </Table>
+         </Worksheet>
+        </Workbook>`;
+
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `IMES_DETAYLI_RAPOR_${new Date().toLocaleDateString('tr-TR')}.xls`;
+        a.click();
     };
 
     const getTarih = () => new Date().toLocaleString('tr-TR');
