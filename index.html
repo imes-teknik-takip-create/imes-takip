@@ -180,7 +180,7 @@
     const auth = getAuth(app);
 
     const ADMIN_EMAIL = "emrah@imesspor.com";
-    const KAYIT_EKIBI = ["eren@imesspor.com", "ermanmete.em@gmail.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com", "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com", "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com", "melisa@imesspor.com", "alimran@imesspor.com"];
+    const KAYIT_EKIBI = ["eren@imesspor.com", "ermanmete@imesspor.com", "aykutonus@imesspor.com", "burak@imesspor.com", "candemir@imesspor.com", "mehmetcan@imesspor.com", "levent@imesspor.com", "selahattin@imesspor.com", "timucin@imesspor.com", "melisa@imesspor.com", "alimran@imesspor.com"];
 
     let isAdmin = false;
     let tumIsler = [];
@@ -448,12 +448,40 @@
     };
     
     window.updateStatus = (id, type) => {
-        const msg = type === 'sevk' ? 'Sevk edildi olarak işaretlensin mi?' : 'Kurulum tamamlandı olarak işaretlensin mi?';
+        // Listeden ilgili işi bulup kurulum durumunu kontrol ediyoruz
+        const isIndex = tumIsler.findIndex(x => x.id === id);
+        const job = tumIsler[isIndex];
+        
+        // KURULUM YOK mu seçili?
+        const isNoInstall = (job.kurulumGereksinimi === 'KURULUM YOK');
+        
+        let msg = type === 'sevk' ? 'Sevk edildi olarak işaretlensin mi?' : 'Kurulum tamamlandı olarak işaretlensin mi?';
+        
+        if(type === 'sevk' && isNoInstall) {
+            msg = "Bu işte KURULUM YOK. Sevk edildiği an direkt TAMAMLANDI sütununa taşınacaktır. Onaylıyor musunuz?";
+        }
+
         if(confirm(msg)) {
             const up = {}; 
-            up[`isler/${id}/${type}Durum`] = true; 
-            up[`isler/${id}/${type}Tarihi`] = getTarih(); 
-            up[`isler/${id}/${type}Yapan`] = auth.currentUser.displayName || auth.currentUser.email;
+            const userBilgi = auth.currentUser.displayName || auth.currentUser.email;
+            const simdi = getTarih();
+
+            if(type === 'sevk' && isNoInstall) {
+                // KURULUM YOKSA: Her iki durumu da TRUE yapıyoruz
+                up[`isler/${id}/sevkDurum`] = true; 
+                up[`isler/${id}/sevkTarihi`] = simdi; 
+                up[`isler/${id}/sevkYapan`] = userBilgi;
+                
+                up[`isler/${id}/kurulumDurum`] = true; 
+                up[`isler/${id}/kurulumTarihi`] = simdi; 
+                up[`isler/${id}/kurulumYapan`] = userBilgi;
+            } else {
+                // NORMAL AKIŞ
+                up[`isler/${id}/${type}Durum`] = true; 
+                up[`isler/${id}/${type}Tarihi`] = simdi; 
+                up[`isler/${id}/${type}Yapan`] = userBilgi;
+            }
+            
             up[`isler/${id}/timestamp`] = Date.now();
             update(ref(db), up);
         }
@@ -466,4 +494,3 @@
 </script>
 </body>
 </html>
-
