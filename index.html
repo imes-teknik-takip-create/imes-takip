@@ -127,7 +127,7 @@
 
     <div id="admin-panel" class="p-3 bg-white shadow-sm border-bottom hidden">
         <div class="row g-2 px-2">
-            <div class="col-md-3"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Firma / Kişi"></div>
+            <div class="col-md-2"><input type="text" id="m_adi" class="form-control form-control-sm" placeholder="Firma / Kişi"></div>
             <div class="col-md-2"><input type="text" id="m_bolge" class="form-control form-control-sm" placeholder="Sevk Adresi"></div>
             <div class="col-md-2"><input type="text" id="m_iletisim" class="form-control form-control-sm" placeholder="Kişi / Telefon"></div>
             <div class="col-md-2">
@@ -137,6 +137,12 @@
                 <select id="m_hazir_durum" class="form-select form-select-sm">
                     <option value="false">⏳ BEKLEMEDE</option>
                     <option value="true">✅ SEVKE HAZIR</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="m_kurulum_gereksinimi" class="form-select form-select-sm">
+                    <option value="KURULUM YOK">🛠 KURULUM YOK</option>
+                    <option value="KURULUM VAR">🛠 KURULUM VAR</option>
                 </select>
             </div>
             <div class="col-md-1"><button id="btnKaydet" class="btn btn-dark btn-sm w-100 fw-bold">KAYDET</button></div>
@@ -214,7 +220,6 @@
 
     document.getElementById('btnLogout').onclick = () => signOut(auth);
 
-    /* GÜNCELLENMİŞ RAPOR FONKSİYONU - SEKMELİ YAPI */
     document.getElementById('btnExcel').onclick = () => {
         const bekleyenler = tumIsler.filter(m => !m.sevkDurum);
         const sevkEdilenler = tumIsler.filter(m => m.sevkDurum && !m.kurulumDurum);
@@ -291,15 +296,27 @@
         const ad = document.getElementById('m_adi').value;
         const bolge = document.getElementById('m_bolge').value;
         const muhtemel = document.getElementById('m_muhtemel_tarih').value;
+        const kurulumSecimi = document.getElementById('m_kurulum_gereksinimi').value;
+
         if(ad && bolge) {
             push(ref(db, 'isler/'), { 
-                ad: ad.toUpperCase(), bolge: bolge.toUpperCase(), tel: document.getElementById('m_iletisim').value,
+                ad: ad.toUpperCase(), 
+                bolge: bolge.toUpperCase(), 
+                tel: document.getElementById('m_iletisim').value,
                 muhtemelTarih: muhtemel,
-                hazirDurum: document.getElementById('m_hazir_durum').value, aciklama: "", kayitTarihi: getTarih(), 
-                timestamp: Date.now(), sevkDurum: false, kurulumDurum: false, kayitYapan: auth.currentUser.displayName || auth.currentUser.email,
-                kurulumGereksinimi: "KURULUM YOK"
+                hazirDurum: document.getElementById('m_hazir_durum').value, 
+                aciklama: "", 
+                kayitTarihi: getTarih(), 
+                timestamp: Date.now(), 
+                sevkDurum: false, 
+                kurulumDurum: false, 
+                kayitYapan: auth.currentUser.displayName || auth.currentUser.email,
+                kurulumGereksinimi: kurulumSecimi
             });
-            document.getElementById('m_adi').value = ""; document.getElementById('m_bolge').value = ""; document.getElementById('m_iletisim').value = ""; document.getElementById('m_muhtemel_tarih').value = "";
+            document.getElementById('m_adi').value = ""; 
+            document.getElementById('m_bolge').value = ""; 
+            document.getElementById('m_iletisim').value = ""; 
+            document.getElementById('m_muhtemel_tarih').value = "";
         }
     };
 
@@ -358,8 +375,14 @@
             }
 
             let detaySatirlari = [`<div><b>Kayıt:</b> ${m.kayitYapan || '-'} (${m.kayitTarihi})</div>`];
-            if(m.sevkDurum) detaySatirlari.push(`<div><b>Sevk:</b> ${m.sevkYapan || '-'} (${m.sevkTarihi})</div>`);
-            if(m.kurulumDurum) detaySatirlari.push(`<div><b>Kurulum:</b> ${m.kurulumYapan || '-'} (${m.kurulumTarihi})</div>`);
+
+            if(m.sevkDurum) {
+                detaySatirlari.push(`<div><b>Sevk:</b> ${m.sevkYapan || '-'} (${m.sevkTarihi})</div>`);
+            }
+
+            if(m.kurulumDurum && m.kurulumGereksinimi !== 'KURULUM YOK') {
+                detaySatirlari.push(`<div><b>Kurulum:</b> ${m.kurulumYapan || '-'} (${m.kurulumTarihi})</div>`);
+            }
 
             const html = `
                 <div class="card p-3 ${cls} ${pulseClass}">
@@ -448,11 +471,8 @@
     };
     
     window.updateStatus = (id, type) => {
-        // Listeden ilgili işi bulup kurulum durumunu kontrol ediyoruz
         const isIndex = tumIsler.findIndex(x => x.id === id);
         const job = tumIsler[isIndex];
-        
-        // KURULUM YOK mu seçili?
         const isNoInstall = (job.kurulumGereksinimi === 'KURULUM YOK');
         
         let msg = type === 'sevk' ? 'Sevk edildi olarak işaretlensin mi?' : 'Kurulum tamamlandı olarak işaretlensin mi?';
@@ -467,16 +487,13 @@
             const simdi = getTarih();
 
             if(type === 'sevk' && isNoInstall) {
-                // KURULUM YOKSA: Her iki durumu da TRUE yapıyoruz
                 up[`isler/${id}/sevkDurum`] = true; 
                 up[`isler/${id}/sevkTarihi`] = simdi; 
                 up[`isler/${id}/sevkYapan`] = userBilgi;
-                
                 up[`isler/${id}/kurulumDurum`] = true; 
                 up[`isler/${id}/kurulumTarihi`] = simdi; 
                 up[`isler/${id}/kurulumYapan`] = userBilgi;
             } else {
-                // NORMAL AKIŞ
                 up[`isler/${id}/${type}Durum`] = true; 
                 up[`isler/${id}/${type}Tarihi`] = simdi; 
                 up[`isler/${id}/${type}Yapan`] = userBilgi;
